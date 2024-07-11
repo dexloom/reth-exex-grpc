@@ -5,7 +5,8 @@ package exex;
 import "google/protobuf/empty.proto";
 
 service RemoteExEx {
-  rpc Subscribe(SubscribeRequest) returns (stream ExExNotification) {}
+  rpc SubscribeExEx(SubscribeRequest) returns (stream ExExNotification) {}
+  rpc SubscribeMempoolTx(SubscribeRequest) returns (stream Transaction) {}
 }
 
 message SubscribeRequest {}
