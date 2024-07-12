@@ -123,8 +123,8 @@ where
 
 fn main() -> eyre::Result<()> {
     reth::cli::Cli::parse_args().run(|builder, _| async move {
-        let notifications_exex = broadcast::channel(1).0;
-        let notifications_tx = broadcast::channel(1).0;
+        let notifications_exex = broadcast::channel(2).0;
+        let notifications_tx = broadcast::channel(1000).0;
 
         let server = Server::builder()
             .add_service(RemoteExExServer::new(ExExService {
