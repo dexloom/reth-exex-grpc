@@ -61,16 +61,23 @@ impl RemoteExEx for ExExService {
 
         let mut notifications = self.notifications_tx.subscribe();
         tokio::spawn(async move {
-            while let Ok(tx_signed) = notifications.recv().await {
-                match TryInto::<ProtoTransaction>::try_into(&tx_signed) {
-                    Ok(transaction) => {
-                        if let Err(e) = tx.send(Ok(transaction)).await {
-                            error!(error=?e , "transaction.send");
-                            break;
+            loop {
+                match notifications.recv().await {
+                    Ok(tx_signed)=>{
+                        match TryInto::<ProtoTransaction>::try_into(&tx_signed) {
+                            Ok(transaction) => {
+                                if let Err(e) = tx.send(Ok(transaction)).await {
+                                    error!(error=?e , "transaction.send");
+                                    break;
+                                }
+                            }
+                            Err(e) => {
+                                error!(error=?e , "Transaction::try_into");
+                            }
                         }
                     }
-                    Err(e) => {
-                        error!(error=?e , "Transaction::try_into");
+                    Err(e)=>{
+                        error!(error=?e , "transaction.recv");
                     }
                 }
             }
