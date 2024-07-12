@@ -4,13 +4,12 @@ use example_exex_remote::proto::{
     SubscribeRequest as ProtoSubscribeRequest,
     Transaction as ProtoTransaction,
 };
-use reth::primitives::{IntoRecoveredTransaction, Transaction, TransactionSigned};
+use reth::primitives::{IntoRecoveredTransaction, TransactionSigned};
 use reth::transaction_pool::{BlobStore, Pool, TransactionOrdering, TransactionPool, TransactionValidator};
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
 use reth_node_api::FullNodeComponents;
 use reth_node_ethereum::EthereumNode;
 use reth_tracing::tracing::{error, info};
-use tokio::select;
 use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, transport::Server};

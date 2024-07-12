@@ -30,9 +30,14 @@ reth-exex-test-utils = { git = "https://github.com/paradigmxyz/reth" }
 
 tokio = "1"
 
+
+
 [features]
 default = []
 optimism = ["reth/optimism"]
+jemalloc = ["reth/jemalloc"]
+asm-keccak = ["reth/asm-keccak"]
+
 
 [[example]]
 name = "exex"
@@ -43,3 +48,17 @@ name = "consumer"
 [[bin]]
 name = "exex_grpc_node"
 path = "bin/exex_grpc_node/src/main.rs"
+
+[profile.maxperf]
+inherits = "release"
+lto = "fat"
+codegen-units = 1
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+debug = "line-tables-only"
+strip = true
+panic = "unwind"
+codegen-units = 16
+
