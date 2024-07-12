@@ -57,7 +57,7 @@ impl RemoteExEx for ExExService {
         &self,
         _request: Request<ProtoSubscribeRequest>,
     ) -> Result<Response<Self::SubscribeMempoolTxStream>, Status> {
-        let (tx, rx) = mpsc::channel(1);
+        let (tx, rx) = mpsc::channel(1000);
 
         let mut notifications = self.notifications_tx.subscribe();
         tokio::spawn(async move {
