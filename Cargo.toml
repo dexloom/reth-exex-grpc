@@ -39,12 +39,6 @@ jemalloc = ["reth/jemalloc"]
 asm-keccak = ["reth/asm-keccak"]
 
 
-[[example]]
-name = "exex"
-
-[[example]]
-name = "consumer"
-
 [[bin]]
 name = "exex_grpc_node"
 path = "bin/exex_grpc_node/src/main.rs"

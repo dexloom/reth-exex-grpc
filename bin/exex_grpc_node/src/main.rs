@@ -34,11 +34,20 @@ impl RemoteExEx for ExExService {
         let mut notifications = self.notifications_exex.subscribe();
         tokio::spawn(async move {
             while let Ok(notification) = notifications.recv().await {
-                if let Err(e) = tx.send(Ok((&notification).try_into().expect("failed to encode"))).await {
-                    error!(error=?e , "exex.send");
-                    break;
+                match TryInto::<ProtoExExNotification>::try_into(&notification) {
+                    Ok(notification)=>{
+                        if let Err(e) = tx.send(Ok(notification)).await {
+                            error!(error=?e , "exex.send");
+                            break;
+                        }
+                    }
+                    Err(e)=>{
+                        error!(error=?e , "ExExNotification::try_into");
+                    }
                 }
             }
+            error!("exex notification loop finished");
+
         });
 
         Ok(Response::new(ReceiverStream::new(rx)))
@@ -52,12 +61,21 @@ impl RemoteExEx for ExExService {
 
         let mut notifications = self.notifications_tx.subscribe();
         tokio::spawn(async move {
-            while let Ok(notification) = notifications.recv().await {
-                if let Err(e) = tx.send(Ok((&notification).try_into().expect("failed to encode"))).await {
-                    error!(error=?e,"mempool.send");
-                    break;
+            while let Ok(tx_signed) = notifications.recv().await {
+                match TryInto::<ProtoTransaction>::try_into(&tx_signed) {
+                    Ok(transaction) => {
+                        if let Err(e) = tx.send(Ok(transaction)).await {
+                            error!(error=?e , "transaction.send");
+                            break;
+                        }
+                    }
+                    Err(e) => {
+                        error!(error=?e , "Transaction::try_into");
+                    }
                 }
             }
+            error!("transaction loop finished");
+
         });
 
         Ok(Response::new(ReceiverStream::new(rx)))
