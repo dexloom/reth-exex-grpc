@@ -7,11 +7,11 @@ license = "MIT OR Apache-2.0"
 publish = false
 
 [dependencies]
-reth = { git = "https://github.com/paradigmxyz/reth", rev = "d599393"}
-reth-exex = { git = "https://github.com/paradigmxyz/reth", rev = "d599393", features = ["serde"] }
-reth-node-api = { git = "https://github.com/paradigmxyz/reth", rev = "d599393" }
-reth-node-ethereum = { git = "https://github.com/paradigmxyz/reth", rev = "d599393" }
-reth-tracing = { git = "https://github.com/paradigmxyz/reth", rev = "d599393" }
+reth = { git = "https://github.com/paradigmxyz/reth"}
+reth-exex = { git = "https://github.com/paradigmxyz/reth", features = ["serde"] }
+reth-node-api = { git = "https://github.com/paradigmxyz/reth" }
+reth-node-ethereum = { git = "https://github.com/paradigmxyz/reth" }
+reth-tracing = { git = "https://github.com/paradigmxyz/reth" }
 
 eyre = "0.6"
 

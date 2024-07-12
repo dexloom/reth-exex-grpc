@@ -230,6 +230,7 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
                 max_fee_per_blob_gas: max_fee_per_blob_gas.to_le_bytes().to_vec(),
                 input: input.to_vec(),
             }),
+	    reth::primitives::Transaction::Eip7702(_) => todo!(),
             #[cfg(feature = "optimism")]
             reth::primitives::Transaction::Deposit(_) => {
                 eyre::bail!("deposit transaction not supported")
@@ -419,6 +420,7 @@ impl TryFrom<&reth::primitives::Receipt> for proto::NonEmptyReceipt {
                 reth::primitives::TxType::Eip2930 => proto::TxType::Eip2930,
                 reth::primitives::TxType::Eip1559 => proto::TxType::Eip1559,
                 reth::primitives::TxType::Eip4844 => proto::TxType::Eip4844,
+                reth::primitives::TxType::Eip7702 => todo!(),
                 #[cfg(feature = "optimism")]
                 reth::primitives::TxType::Deposit => {
                     eyre::bail!("deposit transaction not supported")
