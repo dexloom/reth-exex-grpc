@@ -31,7 +31,7 @@ impl ExExClient {
         let client = RemoteExExClient::connect(url).await?
             .max_encoding_message_size(usize::MAX)
             .max_decoding_message_size(usize::MAX);
-        
+
         Ok(ExExClient {
             client
         })
@@ -63,7 +63,7 @@ impl ExExClient {
                     Ok(None) => break, // Stream has ended
                     Err(err) => {
                         eprintln!("Error receiving mempooltx.message: {:?}", err);
-                        //break;
+                        break;
                     }
                 }
             }
@@ -105,7 +105,7 @@ impl ExExClient {
                     Ok(None) => break, // Stream has ended
                     Err(err) => {
                         eprintln!("Error receiving header.message: {:?}", err);
-                        //break;
+                        break;
                     }
                 }
             }
@@ -149,7 +149,7 @@ impl ExExClient {
                     Ok(None) => break, // Stream has ended
                     Err(err) => {
                         eprintln!("Error receiving block.message: {:?}", err);
-                        //break;
+                        break;
                     }
                 }
             }
@@ -189,7 +189,7 @@ impl ExExClient {
                     Ok(None) => break, // Stream has ended
                     Err(err) => {
                         eprintln!("Error receiving logs.message: {:?}", err);
-                        //break;
+                        break;
                     }
                 }
             }
@@ -248,7 +248,7 @@ impl ExExClient {
                     Ok(None) => break, // Stream has ended
                     Err(err) => {
                         eprintln!("Error receiving state_update.message: {:?}", err);
-                        //break;
+                        break;
                     }
                 }
             }
@@ -284,7 +284,7 @@ impl ExExClient {
                     Ok(None) => break, // Stream has ended
                     Err(err) => {
                         eprintln!("Error receiving exex.message: {:?}", err);
-                        //break;
+                        break;
                     }
                 }
             }
