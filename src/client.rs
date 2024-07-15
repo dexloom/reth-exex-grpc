@@ -28,7 +28,10 @@ pub struct ExExClient {
 
 impl ExExClient {
     pub async fn connect(url: String) -> eyre::Result<ExExClient> {
-        let client = RemoteExExClient::connect(url).await?;
+        let client = RemoteExExClient::connect(url).await?
+            .max_encoding_message_size(usize::MAX)
+            .max_decoding_message_size(usize::MAX);
+        
         Ok(ExExClient {
             client
         })
