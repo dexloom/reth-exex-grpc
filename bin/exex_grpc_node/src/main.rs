@@ -216,6 +216,7 @@ async fn exex<Node: FullNodeComponents>(
     mut ctx: ExExContext<Node>,
     notifications: broadcast::Sender<ExExNotification>,
 ) -> eyre::Result<()> {
+    info!("ExEx worker started");
     while let Some(notification) = ctx.notifications.recv().await {
         let _ = notifications.send(notification.clone());
 
@@ -223,6 +224,7 @@ async fn exex<Node: FullNodeComponents>(
             ctx.events.send(ExExEvent::FinishedHeight(committed_chain.tip().number))?;
         }
     }
+    info!("ExEx worker finished");
 
     Ok(())
 }
@@ -239,6 +241,7 @@ where
     while let Some(tx_notification) = tx_listener.recv().await {
         let _ = notifications.send(tx_notification.transaction.to_recovered_transaction().into());
     }
+    info!("Mempool worker finished");
 
     Ok(())
 }
