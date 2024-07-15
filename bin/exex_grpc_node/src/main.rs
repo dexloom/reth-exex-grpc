@@ -1,9 +1,3 @@
-use example_exex_remote::proto::{
-    ExExNotification as ProtoExExNotification,
-    remote_ex_ex_server::{RemoteExEx, RemoteExExServer},
-    SubscribeRequest as ProtoSubscribeRequest,
-    Transaction as ProtoTransaction,
-};
 use reth::primitives::{IntoRecoveredTransaction, TransactionSigned};
 use reth::transaction_pool::{BlobStore, Pool, TransactionOrdering, TransactionPool, TransactionValidator};
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
@@ -14,10 +8,39 @@ use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{Request, Response, Status, transport::Server};
 
+use example_exex_remote::proto::{Block as ProtoBlock, Chain, ex_ex_notification, ExExNotification as ProtoExExNotification, ReceiptsNotification as ProtoReceiptNotification, ReceiptsNotification, remote_ex_ex_server::{RemoteExEx, RemoteExExServer}, SealedHeader as ProtoSealedHeader, StateUpdateNotification as ProtoStateUpdateNotification, StateUpdateNotification, SubscribeRequest as ProtoSubscribeRequest, Transaction as ProtoTransaction};
+
 #[derive(Debug)]
 struct ExExService {
     notifications_exex: broadcast::Sender<ExExNotification>,
     notifications_tx: broadcast::Sender<TransactionSigned>,
+}
+
+
+fn get_chain(notification: ExExNotification) -> Option<Chain> {
+    match TryInto::<ProtoExExNotification>::try_into(&notification) {
+        Ok(notification) => {
+            if let Some(notification) = notification.notification {
+                match notification {
+                    ex_ex_notification::Notification::ChainCommitted(chain) => {
+                        chain.new
+                    }
+                    ex_ex_notification::Notification::ChainReorged(chain) => {
+                        chain.new
+                    }
+                    ex_ex_notification::Notification::ChainReverted(_chain) => {
+                        None
+                    }
+                }
+            } else {
+                None
+            }
+        }
+        Err(e) => {
+            error!(error=?e , "ExExNotification::try_into");
+            None
+        }
+    }
 }
 
 #[tonic::async_trait]
@@ -25,29 +48,130 @@ impl RemoteExEx for ExExService {
     type SubscribeExExStream = ReceiverStream<Result<ProtoExExNotification, Status>>;
     type SubscribeMempoolTxStream = ReceiverStream<Result<ProtoTransaction, Status>>;
 
+    type SubscribeHeaderStream = ReceiverStream<Result<ProtoSealedHeader, Status>>;
+    type SubscribeBlockStream = ReceiverStream<Result<ProtoBlock, Status>>;
+    type SubscribeReceiptsStream = ReceiverStream<Result<ProtoReceiptNotification, Status>>;
+    type SubscribeStateUpdateStream = ReceiverStream<Result<ProtoStateUpdateNotification, Status>>;
+
+
+    async fn subscribe_header(&self, _request: Request<ProtoSubscribeRequest>) -> Result<Response<Self::SubscribeHeaderStream>, Status> {
+        let (tx, rx) = mpsc::channel(1);
+        let mut exex_notifications = self.notifications_exex.subscribe();
+        tokio::spawn(async move {
+            while let Ok(notification) = exex_notifications.recv().await {
+                if let Some(chain) = get_chain(notification) {
+                    for block in chain.blocks.into_iter() {
+                        if let Some(header) = block.header {
+                            if let Err(e) = tx.send(Ok(header)).await {
+                                error!(error=?e , "header.exex.send");
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+            error!("subscribe_header exex notification loop finished");
+        });
+        Ok(Response::new(ReceiverStream::new(rx)))
+    }
+
+    async fn subscribe_block(&self, _request: Request<ProtoSubscribeRequest>) -> Result<Response<Self::SubscribeBlockStream>, Status> {
+        let (tx, rx) = mpsc::channel(1);
+        let mut exex_notifications = self.notifications_exex.subscribe();
+        tokio::spawn(async move {
+            while let Ok(notification) = exex_notifications.recv().await {
+                if let Some(chain) = get_chain(notification) {
+                    for block in chain.blocks.into_iter() {
+                        if let Err(e) = tx.send(Ok(block)).await {
+                            error!(error=?e , "blocks.exex.send");
+                            break;
+                        }
+                    }
+                }
+            }
+            error!("subscribe_blocks exex notification loop finished");
+        });
+        Ok(Response::new(ReceiverStream::new(rx)))
+    }
+
+    async fn subscribe_receipts(&self, _request: Request<ProtoSubscribeRequest>) -> Result<Response<Self::SubscribeReceiptsStream>, Status> {
+        let (tx, rx) = mpsc::channel(1);
+        let mut exex_notifications = self.notifications_exex.subscribe();
+        tokio::spawn(async move {
+            while let Ok(notification) = exex_notifications.recv().await {
+                if let Some(chain) = get_chain(notification) {
+                    if let Some(execution_outcome) = chain.execution_outcome {
+                        let mut curblock = 0;
+                        for receipts in execution_outcome.receipts {
+                            let block = chain.blocks[curblock].clone();
+                            let receipt_notification = ReceiptsNotification {
+                                block: Some(block),
+                                receipts: Some(receipts),
+                            };
+                            if let Err(e) = tx.send(Ok(receipt_notification)).await {
+                                error!(error=?e , "receipts.exex.send");
+                                break;
+                            }
+                            curblock += 1;
+                        }
+                    }
+                }
+            }
+            error!("subscribe_blocks exex notification loop finished");
+        });
+
+        Ok(Response::new(ReceiverStream::new(rx)))
+    }
+
+    async fn subscribe_state_update(&self, _request: Request<ProtoSubscribeRequest>) -> Result<Response<Self::SubscribeStateUpdateStream>, Status> {
+        let (tx, rx) = mpsc::channel(1);
+        let mut exex_notifications = self.notifications_exex.subscribe();
+        tokio::spawn(async move {
+            while let Ok(notification) = exex_notifications.recv().await {
+                if let Some(chain) = get_chain(notification) {
+                    if let Some(last_block) = chain.blocks.last() {
+                        if let Some(header) = &last_block.header {
+                            if let Some(execution_outcome) = chain.execution_outcome {
+                                let state_update_notification = StateUpdateNotification {
+                                    hash: header.hash.clone(),
+                                    bundle: execution_outcome.bundle,
+                                };
+                                if let Err(e) = tx.send(Ok(state_update_notification)).await {
+                                    error!(error=?e , "state_update.exex.send");
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            error!("subscribe_state_update exex notification loop finished");
+        });
+        Ok(Response::new(ReceiverStream::new(rx)))
+    }
+
     async fn subscribe_ex_ex(
         &self,
         _request: Request<ProtoSubscribeRequest>,
     ) -> Result<Response<Self::SubscribeExExStream>, Status> {
         let (tx, rx) = mpsc::channel(1);
 
-        let mut notifications = self.notifications_exex.subscribe();
+        let mut exex_notifications = self.notifications_exex.subscribe();
         tokio::spawn(async move {
-            while let Ok(notification) = notifications.recv().await {
+            while let Ok(notification) = exex_notifications.recv().await {
                 match TryInto::<ProtoExExNotification>::try_into(&notification) {
-                    Ok(notification)=>{
+                    Ok(notification) => {
                         if let Err(e) = tx.send(Ok(notification)).await {
                             error!(error=?e , "exex.send");
                             break;
                         }
                     }
-                    Err(e)=>{
+                    Err(e) => {
                         error!(error=?e , "ExExNotification::try_into");
                     }
                 }
             }
             error!("exex notification loop finished");
-
         });
 
         Ok(Response::new(ReceiverStream::new(rx)))
@@ -63,7 +187,7 @@ impl RemoteExEx for ExExService {
         tokio::spawn(async move {
             loop {
                 match notifications.recv().await {
-                    Ok(tx_signed)=>{
+                    Ok(tx_signed) => {
                         match TryInto::<ProtoTransaction>::try_into(&tx_signed) {
                             Ok(transaction) => {
                                 if let Err(e) = tx.send(Ok(transaction)).await {
@@ -76,13 +200,12 @@ impl RemoteExEx for ExExService {
                             }
                         }
                     }
-                    Err(e)=>{
+                    Err(e) => {
                         error!(error=?e , "transaction.recv");
                     }
                 }
             }
             error!("transaction loop finished");
-
         });
 
         Ok(Response::new(ReceiverStream::new(rx)))
@@ -94,11 +217,11 @@ async fn exex<Node: FullNodeComponents>(
     notifications: broadcast::Sender<ExExNotification>,
 ) -> eyre::Result<()> {
     while let Some(notification) = ctx.notifications.recv().await {
+        let _ = notifications.send(notification.clone());
+
         if let Some(committed_chain) = notification.committed_chain() {
             ctx.events.send(ExExEvent::FinishedHeight(committed_chain.tip().number))?;
         }
-
-        let _ = notifications.send(notification);
     }
 
     Ok(())

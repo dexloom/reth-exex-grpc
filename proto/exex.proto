@@ -6,10 +6,26 @@ import "google/protobuf/empty.proto";
 
 service RemoteExEx {
   rpc SubscribeExEx(SubscribeRequest) returns (stream ExExNotification) {}
+  rpc SubscribeHeader(SubscribeRequest) returns (stream SealedHeader) {}
+  rpc SubscribeBlock(SubscribeRequest) returns (stream Block) {}
+  rpc SubscribeReceipts(SubscribeRequest) returns (stream ReceiptsNotification) {}
+  rpc SubscribeStateUpdate(SubscribeRequest) returns (stream StateUpdateNotification) {}
+
   rpc SubscribeMempoolTx(SubscribeRequest) returns (stream Transaction) {}
 }
 
 message SubscribeRequest {}
+
+message ReceiptsNotification {
+  Block block = 2;
+  BlockReceipts receipts = 3;
+}
+
+message StateUpdateNotification {
+  bytes hash = 1;
+  BundleState bundle = 2;
+}
+
 
 message ExExNotification {
   oneof notification {

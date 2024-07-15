@@ -7,12 +7,21 @@ license = "MIT OR Apache-2.0"
 publish = false
 
 [dependencies]
-reth = { git = "https://github.com/paradigmxyz/reth"}
+alloy = { version = "0.1.4", features = ["rpc-types"] }
+
+reth = { git = "https://github.com/paradigmxyz/reth" }
 reth-exex = { git = "https://github.com/paradigmxyz/reth", features = ["serde"] }
 reth-node-api = { git = "https://github.com/paradigmxyz/reth" }
 reth-node-ethereum = { git = "https://github.com/paradigmxyz/reth" }
 reth-tracing = { git = "https://github.com/paradigmxyz/reth" }
+#reth-types = { git = "https://github.com/paradigmxyz/reth" }
+reth-rpc-types = { git = "https://github.com/paradigmxyz/reth" }
+reth-rpc-types-compat = { git = "https://github.com/paradigmxyz/reth" }
+reth-primitives = { git = "https://github.com/paradigmxyz/reth" }
 
+futures-util = "0.3.30"
+
+async-stream = "0.3.5"
 eyre = "0.6"
 
 tonic = "0.12"
