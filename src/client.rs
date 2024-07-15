@@ -59,8 +59,8 @@ impl ExExClient {
                     }
                     Ok(None) => break, // Stream has ended
                     Err(err) => {
-                        eprintln!("Error receiving message: {:?}", err);
-                        break;
+                        eprintln!("Error receiving mempooltx.message: {:?}", err);
+                        //break;
                     }
                 }
             }
@@ -101,8 +101,8 @@ impl ExExClient {
                     },
                     Ok(None) => break, // Stream has ended
                     Err(err) => {
-                        eprintln!("Error receiving message: {:?}", err);
-                        break;
+                        eprintln!("Error receiving header.message: {:?}", err);
+                        //break;
                     }
                 }
             }
@@ -145,8 +145,8 @@ impl ExExClient {
                     },
                     Ok(None) => break, // Stream has ended
                     Err(err) => {
-                        eprintln!("Error receiving message: {:?}", err);
-                        break;
+                        eprintln!("Error receiving block.message: {:?}", err);
+                        //break;
                     }
                 }
             }
@@ -185,8 +185,8 @@ impl ExExClient {
                     },
                     Ok(None) => break, // Stream has ended
                     Err(err) => {
-                        eprintln!("Error receiving message: {:?}", err);
-                        break;
+                        eprintln!("Error receiving logs.message: {:?}", err);
+                        //break;
                     }
                 }
             }
@@ -244,8 +244,8 @@ impl ExExClient {
                     },
                     Ok(None) => break, // Stream has ended
                     Err(err) => {
-                        eprintln!("Error receiving message: {:?}", err);
-                        break;
+                        eprintln!("Error receiving state_update.message: {:?}", err);
+                        //break;
                     }
                 }
             }
@@ -280,8 +280,8 @@ impl ExExClient {
                         },
                     Ok(None) => break, // Stream has ended
                     Err(err) => {
-                        eprintln!("Error receiving message: {:?}", err);
-                        break;
+                        eprintln!("Error receiving exex.message: {:?}", err);
+                        //break;
                     }
                 }
             }

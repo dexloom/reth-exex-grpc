@@ -64,7 +64,7 @@ impl RemoteExEx for ExExService {
                         if let Some(header) = block.header {
                             if let Err(e) = tx.send(Ok(header)).await {
                                 error!(error=?e , "header.exex.send");
-                                break;
+                                return;
                             }
                         }
                     }
@@ -84,7 +84,7 @@ impl RemoteExEx for ExExService {
                     for block in chain.blocks.into_iter() {
                         if let Err(e) = tx.send(Ok(block)).await {
                             error!(error=?e , "blocks.exex.send");
-                            break;
+                            return;
                         }
                     }
                 }
@@ -110,7 +110,7 @@ impl RemoteExEx for ExExService {
                             };
                             if let Err(e) = tx.send(Ok(receipt_notification)).await {
                                 error!(error=?e , "receipts.exex.send");
-                                break;
+                                return;
                             }
                             curblock += 1;
                         }
@@ -138,7 +138,7 @@ impl RemoteExEx for ExExService {
                                 };
                                 if let Err(e) = tx.send(Ok(state_update_notification)).await {
                                     error!(error=?e , "state_update.exex.send");
-                                    break;
+                                    return;
                                 }
                             }
                         }
