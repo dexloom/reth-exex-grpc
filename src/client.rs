@@ -1,6 +1,7 @@
 use std::collections::{BTreeMap, HashMap};
 use std::convert::Infallible;
 use std::pin::Pin;
+use std::sync::Arc;
 
 use alloy::primitives::{Address, BlockHash, U256};
 use alloy::rpc;
@@ -22,6 +23,7 @@ use crate::helpers::append_all_matching_block_logs_sealed;
 use crate::proto::{Block, SubscribeRequest};
 use crate::proto::remote_ex_ex_client::RemoteExExClient;
 
+#[derive(Debug, Clone)]
 pub struct ExExClient {
     client: RemoteExExClient<Channel>,
 }
@@ -33,7 +35,7 @@ impl ExExClient {
             .max_decoding_message_size(usize::MAX);
 
         Ok(ExExClient {
-            client
+            client: client
         })
     }
 
