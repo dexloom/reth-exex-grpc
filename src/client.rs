@@ -1,27 +1,22 @@
 use std::collections::{BTreeMap, HashMap};
-use std::convert::Infallible;
-use std::pin::Pin;
-use std::sync::Arc;
 
 use alloy::primitives::{Address, BlockHash, U256};
-use alloy::rpc;
-use alloy::rpc::types::BlockTransactionsKind;
 use alloy::rpc::types::trace::geth::AccountState;
+use alloy::rpc::types::BlockTransactionsKind;
 use async_stream::stream;
 use eyre::{eyre, Result};
-use futures_util::pin_mut;
 use reth::primitives::{Header, TransactionSigned, TxHash};
-use reth::revm::db::{BundleAccount, BundleState, StorageWithOriginalValues};
 use reth::revm::db::states::StorageSlot;
+use reth::revm::db::{BundleAccount, StorageWithOriginalValues};
 use reth_exex::ExExNotification;
-use reth_primitives::{SealedBlock, SealedBlockWithSenders};
+use reth_primitives::SealedBlockWithSenders;
 use reth_tracing::tracing::error;
 use tokio_stream::Stream;
 use tonic::transport::Channel;
 
 use crate::helpers::append_all_matching_block_logs_sealed;
-use crate::proto::{Block, SubscribeRequest};
 use crate::proto::remote_ex_ex_client::RemoteExExClient;
+use crate::proto::SubscribeRequest;
 
 #[derive(Debug, Clone)]
 pub struct ExExClient {
@@ -30,21 +25,15 @@ pub struct ExExClient {
 
 impl ExExClient {
     pub async fn connect(url: String) -> eyre::Result<ExExClient> {
-        let client = RemoteExExClient::connect(url).await?
-            .max_encoding_message_size(usize::MAX)
-            .max_decoding_message_size(usize::MAX);
+        let client = RemoteExExClient::connect(url).await?.max_encoding_message_size(usize::MAX).max_decoding_message_size(usize::MAX);
 
-        Ok(ExExClient {
-            client: client
-        })
+        Ok(ExExClient { client })
     }
 
-    pub async fn subscribe_mempool_tx(&self) -> Result<impl Stream<Item=alloy::rpc::types::eth::Transaction> + '_> {
+    pub async fn subscribe_mempool_tx(&self) -> Result<impl Stream<Item = alloy::rpc::types::eth::Transaction> + '_> {
         let stream = self.client.clone().subscribe_mempool_tx(SubscribeRequest {}).await;
         let mut stream = match stream {
-            Ok(stream) => {
-                stream.into_inner()
-            }
+            Ok(stream) => stream.into_inner(),
             Err(e) => {
                 error!(error=?e, "subscribe header");
                 return Err(eyre!("ERROR"));
@@ -72,15 +61,11 @@ impl ExExClient {
         })
     }
 
-    pub async fn subscribe_header(&self) -> Result<impl Stream<Item=alloy::rpc::types::Header> + '_> {
-        let stream = self.client.clone()
-            .subscribe_header(SubscribeRequest {})
-            .await;
+    pub async fn subscribe_header(&self) -> Result<impl Stream<Item = alloy::rpc::types::Header> + '_> {
+        let stream = self.client.clone().subscribe_header(SubscribeRequest {}).await;
 
         let mut stream = match stream {
-            Ok(stream) => {
-                stream.into_inner()
-            }
+            Ok(stream) => stream.into_inner(),
             Err(e) => {
                 error!(error=?e, "subscribe header");
                 return Err(eyre!("ERROR"));
@@ -91,16 +76,13 @@ impl ExExClient {
                 match stream.message().await {
                     Ok(Some(notification)) => {
                         if let Some(header) = notification.header {
-                            match ( Header::try_from(&header), BlockHash::try_from(notification.hash.as_slice()) ) {
-                                ( Ok(header), Ok(hash) )=> {
-                                    let sealed_header = reth::primitives::SealedHeader::new(
-                                        header,
-                                        hash
-                                    );
-                                    let header = reth_rpc_types_compat::block::from_primitive_with_hash(sealed_header);
-                                    yield header;
-                                }
-                                _=>{}
+                            if let ( Ok(header), Ok(hash) ) = ( Header::try_from(&header), BlockHash::try_from(notification.hash.as_slice()) ) {
+                                let sealed_header = reth::primitives::SealedHeader::new(
+                                    header,
+                                    hash
+                                );
+                                let header = reth_rpc_types_compat::block::from_primitive_with_hash(sealed_header);
+                                yield header;
                             }
                         }
                     },
@@ -114,16 +96,11 @@ impl ExExClient {
         })
     }
 
-
-    pub async fn subscribe_block(&self) -> Result<impl Stream<Item=alloy::rpc::types::Block>> {
-        let stream = self.client.clone()
-            .subscribe_block(SubscribeRequest {})
-            .await;
+    pub async fn subscribe_block(&self) -> Result<impl Stream<Item = alloy::rpc::types::Block>> {
+        let stream = self.client.clone().subscribe_block(SubscribeRequest {}).await;
 
         let mut stream = match stream {
-            Ok(stream) => {
-                stream.into_inner()
-            }
+            Ok(stream) => stream.into_inner(),
             Err(e) => {
                 error!(error=?e, "subscribe header");
                 return Err(eyre!("ERROR"));
@@ -157,15 +134,11 @@ impl ExExClient {
             }
         })
     }
-    pub async fn subscribe_logs(&self) -> Result<impl Stream<Item=(BlockHash, Vec<alloy::rpc::types::Log>)>> {
-        let stream = self.client.clone()
-            .subscribe_receipts(SubscribeRequest {})
-            .await;
+    pub async fn subscribe_logs(&self) -> Result<impl Stream<Item = (BlockHash, Vec<alloy::rpc::types::Log>)>> {
+        let stream = self.client.clone().subscribe_receipts(SubscribeRequest {}).await;
 
         let mut stream = match stream {
-            Ok(stream) => {
-                stream.into_inner()
-            }
+            Ok(stream) => stream.into_inner(),
             Err(e) => {
                 error!(error=?e, "subscribe receipts");
                 return Err(eyre!("ERROR"));
@@ -198,15 +171,11 @@ impl ExExClient {
         })
     }
 
-    pub async fn subscribe_stata_update(&self) -> Result<impl Stream<Item=(BlockHash, BTreeMap<Address, AccountState>)>> {
-        let stream = self.client.clone()
-            .subscribe_state_update(SubscribeRequest {})
-            .await;
+    pub async fn subscribe_stata_update(&self) -> Result<impl Stream<Item = (BlockHash, BTreeMap<Address, AccountState>)>> {
+        let stream = self.client.clone().subscribe_state_update(SubscribeRequest {}).await;
 
         let mut stream = match stream {
-            Ok(stream) => {
-                stream.into_inner()
-            }
+            Ok(stream) => stream.into_inner(),
             Err(e) => {
                 error!(error=?e, "subscribe receipts");
                 return Err(eyre!("ERROR"));
@@ -225,7 +194,7 @@ impl ExExClient {
                                     let state_ref: &HashMap<Address, BundleAccount> = &bundle_state.state;
 
                                     for (address, accounts) in state_ref.iter() {
-                                        let mut account_state = state_update.entry(*address).or_default();
+                                        let account_state = state_update.entry(*address).or_default();
                                         if let Some(account_info) = accounts.info.clone() {
                                             account_state.code = account_info.code.map(|c| c.bytecode().clone());
                                             account_state.balance = Some(account_info.balance);
@@ -257,15 +226,11 @@ impl ExExClient {
         })
     }
 
-    pub async fn subscribe_exex(&self) -> Result<impl Stream<Item=ExExNotification> + '_> {
-        let mut stream = self.client.clone()
-            .subscribe_ex_ex(SubscribeRequest {})
-            .await;
+    pub async fn subscribe_exex(&self) -> Result<impl Stream<Item = ExExNotification> + '_> {
+        let stream = self.client.clone().subscribe_ex_ex(SubscribeRequest {}).await;
 
         let mut stream = match stream {
-            Ok(stream) => {
-                stream.into_inner()
-            }
+            Ok(stream) => stream.into_inner(),
             Err(e) => {
                 error!(error=?e, "subscribe exex");
                 return Err(eyre!("ERROR"));
@@ -293,5 +258,3 @@ impl ExExClient {
         })
     }
 }
-
-

@@ -6,14 +6,9 @@ use crate::proto::{Block, BlockReceipts};
 
 /// Appends all matching logs of a block's receipts.
 /// If the log matches, look up the corresponding transaction hash.
-pub fn append_all_matching_block_logs_sealed(
-    receipts: BlockReceipts,
-    removed: bool,
-    block: Block,
-) -> eyre::Result<(BlockHash, Vec<ALog>)> {
+pub fn append_all_matching_block_logs_sealed(receipts: BlockReceipts, removed: bool, block: Block) -> eyre::Result<(BlockHash, Vec<ALog>)> {
     // Tracks the index of a log in the entire block.
     let mut all_logs: Vec<ALog> = Vec::new();
-
 
     let mut log_index: u64 = 0;
 
@@ -46,10 +41,8 @@ pub fn append_all_matching_block_logs_sealed(
                 block_timestamp: Some(header.timestamp),
             };
             all_logs.push(log);
+            log_index += 1;
         }
-        log_index += 1;
     }
     Ok((block_hash, all_logs))
 }
-
-

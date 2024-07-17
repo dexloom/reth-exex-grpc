@@ -6,9 +6,15 @@ use reth_node_ethereum::EthereumNode;
 use reth_tracing::tracing::{error, info};
 use tokio::sync::{broadcast, mpsc};
 use tokio_stream::wrappers::ReceiverStream;
-use tonic::{Request, Response, Status, transport::Server};
+use tonic::{transport::Server, Request, Response, Status};
 
-use example_exex_remote::proto::{Block as ProtoBlock, Chain, ex_ex_notification, ExExNotification as ProtoExExNotification, ReceiptsNotification as ProtoReceiptNotification, ReceiptsNotification, remote_ex_ex_server::{RemoteExEx, RemoteExExServer}, SealedHeader as ProtoSealedHeader, StateUpdateNotification as ProtoStateUpdateNotification, StateUpdateNotification, SubscribeRequest as ProtoSubscribeRequest, Transaction as ProtoTransaction};
+use example_exex_remote::proto::{
+    ex_ex_notification,
+    remote_ex_ex_server::{RemoteExEx, RemoteExExServer},
+    Block as ProtoBlock, Chain, ExExNotification as ProtoExExNotification, ReceiptsNotification as ProtoReceiptNotification,
+    ReceiptsNotification, SealedHeader as ProtoSealedHeader, StateUpdateNotification as ProtoStateUpdateNotification,
+    StateUpdateNotification, SubscribeRequest as ProtoSubscribeRequest, Transaction as ProtoTransaction,
+};
 
 #[derive(Debug)]
 struct ExExService {
@@ -16,21 +22,14 @@ struct ExExService {
     notifications_tx: broadcast::Sender<TransactionSigned>,
 }
 
-
 fn get_chain(notification: ExExNotification) -> Option<Chain> {
     match TryInto::<ProtoExExNotification>::try_into(&notification) {
         Ok(notification) => {
             if let Some(notification) = notification.notification {
                 match notification {
-                    ex_ex_notification::Notification::ChainCommitted(chain) => {
-                        chain.new
-                    }
-                    ex_ex_notification::Notification::ChainReorged(chain) => {
-                        chain.new
-                    }
-                    ex_ex_notification::Notification::ChainReverted(_chain) => {
-                        None
-                    }
+                    ex_ex_notification::Notification::ChainCommitted(chain) => chain.new,
+                    ex_ex_notification::Notification::ChainReorged(chain) => chain.new,
+                    ex_ex_notification::Notification::ChainReverted(_chain) => None,
                 }
             } else {
                 None
@@ -52,7 +51,6 @@ impl RemoteExEx for ExExService {
     type SubscribeBlockStream = ReceiverStream<Result<ProtoBlock, Status>>;
     type SubscribeReceiptsStream = ReceiverStream<Result<ProtoReceiptNotification, Status>>;
     type SubscribeStateUpdateStream = ReceiverStream<Result<ProtoStateUpdateNotification, Status>>;
-
 
     async fn subscribe_header(&self, _request: Request<ProtoSubscribeRequest>) -> Result<Response<Self::SubscribeHeaderStream>, Status> {
         let (tx, rx) = mpsc::channel(1);
@@ -94,25 +92,23 @@ impl RemoteExEx for ExExService {
         Ok(Response::new(ReceiverStream::new(rx)))
     }
 
-    async fn subscribe_receipts(&self, _request: Request<ProtoSubscribeRequest>) -> Result<Response<Self::SubscribeReceiptsStream>, Status> {
+    async fn subscribe_receipts(
+        &self,
+        _request: Request<ProtoSubscribeRequest>,
+    ) -> Result<Response<Self::SubscribeReceiptsStream>, Status> {
         let (tx, rx) = mpsc::channel(1);
         let mut exex_notifications = self.notifications_exex.subscribe();
         tokio::spawn(async move {
             while let Ok(notification) = exex_notifications.recv().await {
                 if let Some(chain) = get_chain(notification) {
                     if let Some(execution_outcome) = chain.execution_outcome {
-                        let mut curblock = 0;
-                        for receipts in execution_outcome.receipts {
+                        for (curblock, receipts) in execution_outcome.receipts.into_iter().enumerate() {
                             let block = chain.blocks[curblock].clone();
-                            let receipt_notification = ReceiptsNotification {
-                                block: Some(block),
-                                receipts: Some(receipts),
-                            };
+                            let receipt_notification = ReceiptsNotification { block: Some(block), receipts: Some(receipts) };
                             if let Err(e) = tx.send(Ok(receipt_notification)).await {
                                 error!(error=?e , "receipts.exex.send");
                                 return;
                             }
-                            curblock += 1;
                         }
                     }
                 }
@@ -123,7 +119,10 @@ impl RemoteExEx for ExExService {
         Ok(Response::new(ReceiverStream::new(rx)))
     }
 
-    async fn subscribe_state_update(&self, _request: Request<ProtoSubscribeRequest>) -> Result<Response<Self::SubscribeStateUpdateStream>, Status> {
+    async fn subscribe_state_update(
+        &self,
+        _request: Request<ProtoSubscribeRequest>,
+    ) -> Result<Response<Self::SubscribeStateUpdateStream>, Status> {
         let (tx, rx) = mpsc::channel(1);
         let mut exex_notifications = self.notifications_exex.subscribe();
         tokio::spawn(async move {
@@ -132,10 +131,8 @@ impl RemoteExEx for ExExService {
                     if let Some(last_block) = chain.blocks.last() {
                         if let Some(header) = &last_block.header {
                             if let Some(execution_outcome) = chain.execution_outcome {
-                                let state_update_notification = StateUpdateNotification {
-                                    hash: header.hash.clone(),
-                                    bundle: execution_outcome.bundle,
-                                };
+                                let state_update_notification =
+                                    StateUpdateNotification { hash: header.hash.clone(), bundle: execution_outcome.bundle };
                                 if let Err(e) = tx.send(Ok(state_update_notification)).await {
                                     error!(error=?e , "state_update.exex.send");
                                     return;
@@ -150,10 +147,7 @@ impl RemoteExEx for ExExService {
         Ok(Response::new(ReceiverStream::new(rx)))
     }
 
-    async fn subscribe_ex_ex(
-        &self,
-        _request: Request<ProtoSubscribeRequest>,
-    ) -> Result<Response<Self::SubscribeExExStream>, Status> {
+    async fn subscribe_ex_ex(&self, _request: Request<ProtoSubscribeRequest>) -> Result<Response<Self::SubscribeExExStream>, Status> {
         let (tx, rx) = mpsc::channel(1);
 
         let mut exex_notifications = self.notifications_exex.subscribe();
@@ -187,19 +181,17 @@ impl RemoteExEx for ExExService {
         tokio::spawn(async move {
             loop {
                 match notifications.recv().await {
-                    Ok(tx_signed) => {
-                        match TryInto::<ProtoTransaction>::try_into(&tx_signed) {
-                            Ok(transaction) => {
-                                if let Err(e) = tx.send(Ok(transaction)).await {
-                                    error!(error=?e , "transaction.send");
-                                    break;
-                                }
-                            }
-                            Err(e) => {
-                                error!(error=?e , "Transaction::try_into");
+                    Ok(tx_signed) => match TryInto::<ProtoTransaction>::try_into(&tx_signed) {
+                        Ok(transaction) => {
+                            if let Err(e) = tx.send(Ok(transaction)).await {
+                                error!(error=?e , "transaction.send");
+                                break;
                             }
                         }
-                    }
+                        Err(e) => {
+                            error!(error=?e , "Transaction::try_into");
+                        }
+                    },
                     Err(e) => {
                         error!(error=?e , "transaction.recv");
                     }
@@ -234,7 +226,7 @@ async fn exex<Node: FullNodeComponents>(
 pub async fn mempool_worker<V, T, S>(mempool: Pool<V, T, S>, notifications: broadcast::Sender<TransactionSigned>) -> eyre::Result<()>
 where
     V: TransactionValidator,
-    T: TransactionOrdering<Transaction=<V as TransactionValidator>::Transaction>,
+    T: TransactionOrdering<Transaction = <V as TransactionValidator>::Transaction>,
     S: BlobStore,
 {
     info!("Mempool worker started");
@@ -247,7 +239,6 @@ where
 
     Ok(())
 }
-
 
 fn main() -> eyre::Result<()> {
     reth::cli::Cli::parse_args().run(|builder, _| async move {
@@ -271,9 +262,7 @@ fn main() -> eyre::Result<()> {
 
         tokio::task::spawn(mempool_worker(mempool, notifications_tx));
 
-        handle.node.task_executor.spawn_critical("gRPC server", async move {
-            server.await.expect("gRPC server crashed")
-        });
+        handle.node.task_executor.spawn_critical("gRPC server", async move { server.await.expect("gRPC server crashed") });
 
         handle.wait_for_node_exit().await
     })
