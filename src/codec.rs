@@ -128,14 +128,14 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
         };
         let transaction = match &transaction.transaction {
             reth::primitives::Transaction::Legacy(reth::primitives::TxLegacy {
-                chain_id,
-                nonce,
-                gas_price,
-                gas_limit,
-                to,
-                value,
-                input,
-            }) => proto::transaction::Transaction::Legacy(proto::TransactionLegacy {
+                                                      chain_id,
+                                                      nonce,
+                                                      gas_price,
+                                                      gas_limit,
+                                                      to,
+                                                      value,
+                                                      input,
+                                                  }) => proto::transaction::Transaction::Legacy(proto::TransactionLegacy {
                 chain_id: *chain_id,
                 nonce: *nonce,
                 gas_price: gas_price.to_le_bytes().to_vec(),
@@ -145,15 +145,15 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
                 input: input.to_vec(),
             }),
             reth::primitives::Transaction::Eip2930(reth::primitives::TxEip2930 {
-                chain_id,
-                nonce,
-                gas_price,
-                gas_limit,
-                to,
-                value,
-                access_list,
-                input,
-            }) => proto::transaction::Transaction::Eip2930(proto::TransactionEip2930 {
+                                                       chain_id,
+                                                       nonce,
+                                                       gas_price,
+                                                       gas_limit,
+                                                       to,
+                                                       value,
+                                                       access_list,
+                                                       input,
+                                                   }) => proto::transaction::Transaction::Eip2930(proto::TransactionEip2930 {
                 chain_id: *chain_id,
                 nonce: *nonce,
                 gas_price: gas_price.to_le_bytes().to_vec(),
@@ -164,16 +164,16 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
                 input: input.to_vec(),
             }),
             reth::primitives::Transaction::Eip1559(reth::primitives::TxEip1559 {
-                chain_id,
-                nonce,
-                gas_limit,
-                max_fee_per_gas,
-                max_priority_fee_per_gas,
-                to,
-                value,
-                access_list,
-                input,
-            }) => proto::transaction::Transaction::Eip1559(proto::TransactionEip1559 {
+                                                       chain_id,
+                                                       nonce,
+                                                       gas_limit,
+                                                       max_fee_per_gas,
+                                                       max_priority_fee_per_gas,
+                                                       to,
+                                                       value,
+                                                       access_list,
+                                                       input,
+                                                   }) => proto::transaction::Transaction::Eip1559(proto::TransactionEip1559 {
                 chain_id: *chain_id,
                 nonce: *nonce,
                 gas_limit: *gas_limit,
@@ -185,19 +185,19 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
                 input: input.to_vec(),
             }),
             reth::primitives::Transaction::Eip4844(reth::primitives::TxEip4844 {
-                chain_id,
-                nonce,
-                gas_limit,
-                max_fee_per_gas,
-                max_priority_fee_per_gas,
-                placeholder: _,
-                to,
-                value,
-                access_list,
-                blob_versioned_hashes,
-                max_fee_per_blob_gas,
-                input,
-            }) => proto::transaction::Transaction::Eip4844(proto::TransactionEip4844 {
+                                                       chain_id,
+                                                       nonce,
+                                                       gas_limit,
+                                                       max_fee_per_gas,
+                                                       max_priority_fee_per_gas,
+                                                       placeholder: _,
+                                                       to,
+                                                       value,
+                                                       access_list,
+                                                       blob_versioned_hashes,
+                                                       max_fee_per_blob_gas,
+                                                       input,
+                                                   }) => proto::transaction::Transaction::Eip4844(proto::TransactionEip4844 {
                 chain_id: *chain_id,
                 nonce: *nonce,
                 gas_limit: *gas_limit,
@@ -285,6 +285,9 @@ impl TryFrom<&reth::revm::primitives::Bytecode> for proto::Bytecode {
                     original_len: legacy_analyzed.original_len() as u64,
                     jump_table: legacy_analyzed.jump_table().0.iter().by_vals().map(|x| x.into()).collect(),
                 })
+            }
+            reth::revm::primitives::Bytecode::Eip7702(_) => {
+                eyre::bail!("Eip7702 bytecode not supported");
             }
             reth::revm::primitives::Bytecode::Eof(_) => {
                 eyre::bail!("EOF bytecode not supported");
@@ -474,7 +477,7 @@ impl TryFrom<&proto::Block> for reth::primitives::SealedBlockWithSenders {
             ),
             senders,
         )
-        .ok_or_eyre("senders do not match transactions")
+            .ok_or_eyre("senders do not match transactions")
     }
 }
 
@@ -521,14 +524,14 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
         };
         let transaction = match transaction.transaction.as_ref().ok_or_eyre("no transaction")? {
             proto::transaction::Transaction::Legacy(proto::TransactionLegacy {
-                chain_id,
-                nonce,
-                gas_price,
-                gas_limit,
-                to,
-                value,
-                input,
-            }) => reth::primitives::Transaction::Legacy(reth::primitives::TxLegacy {
+                                                        chain_id,
+                                                        nonce,
+                                                        gas_price,
+                                                        gas_limit,
+                                                        to,
+                                                        value,
+                                                        input,
+                                                    }) => reth::primitives::Transaction::Legacy(reth::primitives::TxLegacy {
                 chain_id: *chain_id,
                 nonce: *nonce,
                 gas_price: u128::from_le_bytes(gas_price.as_slice().try_into()?),
@@ -538,15 +541,15 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
                 input: input.to_vec().into(),
             }),
             proto::transaction::Transaction::Eip2930(proto::TransactionEip2930 {
-                chain_id,
-                nonce,
-                gas_price,
-                gas_limit,
-                to,
-                value,
-                access_list,
-                input,
-            }) => reth::primitives::Transaction::Eip2930(reth::primitives::TxEip2930 {
+                                                         chain_id,
+                                                         nonce,
+                                                         gas_price,
+                                                         gas_limit,
+                                                         to,
+                                                         value,
+                                                         access_list,
+                                                         input,
+                                                     }) => reth::primitives::Transaction::Eip2930(reth::primitives::TxEip2930 {
                 chain_id: *chain_id,
                 nonce: *nonce,
                 gas_price: u128::from_le_bytes(gas_price.as_slice().try_into()?),
@@ -557,16 +560,16 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
                 input: input.to_vec().into(),
             }),
             proto::transaction::Transaction::Eip1559(proto::TransactionEip1559 {
-                chain_id,
-                nonce,
-                gas_limit,
-                max_fee_per_gas,
-                max_priority_fee_per_gas,
-                to,
-                value,
-                access_list,
-                input,
-            }) => reth::primitives::Transaction::Eip1559(reth::primitives::TxEip1559 {
+                                                         chain_id,
+                                                         nonce,
+                                                         gas_limit,
+                                                         max_fee_per_gas,
+                                                         max_priority_fee_per_gas,
+                                                         to,
+                                                         value,
+                                                         access_list,
+                                                         input,
+                                                     }) => reth::primitives::Transaction::Eip1559(reth::primitives::TxEip1559 {
                 chain_id: *chain_id,
                 nonce: *nonce,
                 gas_limit: *gas_limit,
@@ -578,18 +581,18 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
                 input: input.to_vec().into(),
             }),
             proto::transaction::Transaction::Eip4844(proto::TransactionEip4844 {
-                chain_id,
-                nonce,
-                gas_limit,
-                max_fee_per_gas,
-                max_priority_fee_per_gas,
-                to,
-                value,
-                access_list,
-                blob_versioned_hashes,
-                max_fee_per_blob_gas,
-                input,
-            }) => reth::primitives::Transaction::Eip4844(reth::primitives::TxEip4844 {
+                                                         chain_id,
+                                                         nonce,
+                                                         gas_limit,
+                                                         max_fee_per_gas,
+                                                         max_priority_fee_per_gas,
+                                                         to,
+                                                         value,
+                                                         access_list,
+                                                         blob_versioned_hashes,
+                                                         max_fee_per_blob_gas,
+                                                         input,
+                                                     }) => reth::primitives::Transaction::Eip4844(reth::primitives::TxEip4844 {
                 chain_id: *chain_id,
                 nonce: *nonce,
                 gas_limit: *gas_limit,

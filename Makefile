@@ -7,7 +7,7 @@ build:
 	cargo build --all
 
 release:
-	export RELEASEFLAGS | $(CARGO) build --release
+	RUSTFLAGS="-C target-cpu=native" cargo build --profile maxperf --features jemalloc,asm-keccak
 
 # Target to run all tests
 .PHONY: test

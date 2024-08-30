@@ -10,6 +10,7 @@ use reth::revm::db::states::StorageSlot;
 use reth::revm::db::{BundleAccount, StorageWithOriginalValues};
 use reth_exex::ExExNotification;
 use reth_primitives::SealedBlockWithSenders;
+use reth_rpc_types::WithOtherFields;
 use reth_tracing::tracing::error;
 use tokio_stream::Stream;
 use tonic::transport::Channel;
@@ -30,7 +31,7 @@ impl ExExClient {
         Ok(ExExClient { client })
     }
 
-    pub async fn subscribe_mempool_tx(&self) -> Result<impl Stream<Item = alloy::rpc::types::eth::Transaction> + '_> {
+    pub async fn subscribe_mempool_tx(&self) -> Result<impl Stream<Item=WithOtherFields<alloy::rpc::types::eth::Transaction>> + '_> {
         let stream = self.client.clone().subscribe_mempool_tx(SubscribeRequest {}).await;
         let mut stream = match stream {
             Ok(stream) => stream.into_inner(),
@@ -61,7 +62,7 @@ impl ExExClient {
         })
     }
 
-    pub async fn subscribe_header(&self) -> Result<impl Stream<Item = alloy::rpc::types::Header> + '_> {
+    pub async fn subscribe_header(&self) -> Result<impl Stream<Item=alloy::rpc::types::Header> + '_> {
         let stream = self.client.clone().subscribe_header(SubscribeRequest {}).await;
 
         let mut stream = match stream {
@@ -96,7 +97,7 @@ impl ExExClient {
         })
     }
 
-    pub async fn subscribe_block(&self) -> Result<impl Stream<Item = alloy::rpc::types::Block>> {
+    pub async fn subscribe_block(&self) -> Result<impl Stream<Item=alloy::rpc::types::Block<WithOtherFields<reth_rpc_types::Transaction>>>> {
         let stream = self.client.clone().subscribe_block(SubscribeRequest {}).await;
 
         let mut stream = match stream {
@@ -134,7 +135,7 @@ impl ExExClient {
             }
         })
     }
-    pub async fn subscribe_logs(&self) -> Result<impl Stream<Item = (BlockHash, Vec<alloy::rpc::types::Log>)>> {
+    pub async fn subscribe_logs(&self) -> Result<impl Stream<Item=(BlockHash, Vec<alloy::rpc::types::Log>)>> {
         let stream = self.client.clone().subscribe_receipts(SubscribeRequest {}).await;
 
         let mut stream = match stream {
@@ -171,7 +172,7 @@ impl ExExClient {
         })
     }
 
-    pub async fn subscribe_stata_update(&self) -> Result<impl Stream<Item = (BlockHash, BTreeMap<Address, AccountState>)>> {
+    pub async fn subscribe_stata_update(&self) -> Result<impl Stream<Item=(BlockHash, BTreeMap<Address, AccountState>)>> {
         let stream = self.client.clone().subscribe_state_update(SubscribeRequest {}).await;
 
         let mut stream = match stream {
@@ -226,7 +227,7 @@ impl ExExClient {
         })
     }
 
-    pub async fn subscribe_exex(&self) -> Result<impl Stream<Item = ExExNotification> + '_> {
+    pub async fn subscribe_exex(&self) -> Result<impl Stream<Item=ExExNotification> + '_> {
         let stream = self.client.clone().subscribe_ex_ex(SubscribeRequest {}).await;
 
         let mut stream = match stream {
