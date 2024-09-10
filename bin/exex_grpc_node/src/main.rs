@@ -5,7 +5,7 @@ use reth_node_api::FullNodeComponents;
 use reth_node_ethereum::EthereumNode;
 use reth_tracing::tracing::{error, info};
 use tokio::sync::{broadcast, mpsc};
-use tokio_stream::wrappers::ReceiverStream;
+use tokio_stream::{wrappers::ReceiverStream, StreamExt};
 use tonic::{transport::Server, Request, Response, Status};
 
 use example_exex_remote::proto::{
@@ -209,7 +209,8 @@ async fn exex<Node: FullNodeComponents>(
     notifications: broadcast::Sender<ExExNotification>,
 ) -> eyre::Result<()> {
     info!("ExEx worker started");
-    while let Some(notification) = ctx.notifications.recv().await {
+
+    while let Some(notification) = ctx.notifications.next().await {
         let _ = notifications.send(notification.clone());
 
         if let Some(committed_chain) = notification.committed_chain() {
@@ -226,7 +227,7 @@ async fn exex<Node: FullNodeComponents>(
 pub async fn mempool_worker<V, T, S>(mempool: Pool<V, T, S>, notifications: broadcast::Sender<TransactionSigned>) -> eyre::Result<()>
 where
     V: TransactionValidator,
-    T: TransactionOrdering<Transaction = <V as TransactionValidator>::Transaction>,
+    T: TransactionOrdering<Transaction=<V as TransactionValidator>::Transaction>,
     S: BlobStore,
 {
     info!("Mempool worker started");

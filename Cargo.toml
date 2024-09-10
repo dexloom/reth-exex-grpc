@@ -7,14 +7,14 @@ license = "MIT OR Apache-2.0"
 publish = false
 
 [dependencies]
-alloy = { version = "0.3.0", features = ["rpc-types", "rpc-types-trace"] }
+alloy = { version = "0.3.2", features = ["rpc-types", "rpc-types-trace"] }
 
 reth = { git = "https://github.com/paradigmxyz/reth" }
 reth-exex = { git = "https://github.com/paradigmxyz/reth", features = ["serde"] }
 reth-node-api = { git = "https://github.com/paradigmxyz/reth" }
 reth-node-ethereum = { git = "https://github.com/paradigmxyz/reth" }
 reth-tracing = { git = "https://github.com/paradigmxyz/reth" }
-#reth-types = { git = "https://github.com/paradigmxyz/reth" }
+reth-execution-types = { git = "https://github.com/paradigmxyz/reth" }
 reth-rpc-types = { git = "https://github.com/paradigmxyz/reth" }
 reth-rpc-types-compat = { git = "https://github.com/paradigmxyz/reth" }
 reth-primitives = { git = "https://github.com/paradigmxyz/reth" }
@@ -41,9 +41,6 @@ reth-exex-test-utils = { git = "https://github.com/paradigmxyz/reth" }
 
 [features]
 default = []
-optimism = ["reth/optimism"]
-jemalloc = ["reth/jemalloc"]
-asm-keccak = ["reth/asm-keccak"]
 
 
 [[bin]]

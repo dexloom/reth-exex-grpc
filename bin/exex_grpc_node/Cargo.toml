@@ -14,8 +14,8 @@ tokio.workspace = true
 tokio-stream.workspace = true
 tonic.workspace = true
 
-example-exex-remote = {git = "https://github.com/dexloom/reth-exex-grpc"}
-#example-exex-remote = {path= "../../../reth-exex-grpc"}
+#example-exex-remote = { git = "https://github.com/dexloom/reth-exex-grpc" }
+example-exex-remote = { path = "../../../reth-exex-grpc" }
 
 reth.workspace = true
 reth-exex.workspace = true
