@@ -227,7 +227,7 @@ async fn exex<Node: FullNodeComponents>(
 pub async fn mempool_worker<V, T, S>(mempool: Pool<V, T, S>, notifications: broadcast::Sender<TransactionSigned>) -> eyre::Result<()>
 where
     V: TransactionValidator,
-    T: TransactionOrdering<Transaction=<V as TransactionValidator>::Transaction>,
+    T: TransactionOrdering<Transaction = <V as TransactionValidator>::Transaction>,
     S: BlobStore,
 {
     info!("Mempool worker started");
