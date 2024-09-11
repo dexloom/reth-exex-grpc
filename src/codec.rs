@@ -4,6 +4,7 @@ use eyre::OptionExt;
 use reth::primitives::{Address, BlockHash, Bloom, TxHash, B256, U256};
 
 use crate::proto;
+use crate::proto::tx_kind::Kind;
 
 impl TryFrom<&reth_exex::ExExNotification> for proto::ExExNotification {
     type Error = eyre::Error;
@@ -226,7 +227,7 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
                 gas_limit: gas_limit.to_le_bytes().to_vec(),
                 max_fee_per_gas: max_fee_per_gas.to_le_bytes().to_vec(),
                 max_priority_fee_per_gas: max_priority_fee_per_gas.to_le_bytes().to_vec(),
-                to: Some(to.into()),
+                to: Some(proto::TxKind { kind: Some(Kind::Call(to.to_vec())) }),
                 value: value.to_le_bytes_vec(),
                 access_list: access_list.iter().map(Into::into).collect(),
                 authorization_list: authorization_list
@@ -654,7 +655,7 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
                 gas_limit: u128::from_le_bytes(gas_limit.as_slice().try_into()?),
                 max_fee_per_gas: u128::from_le_bytes(max_fee_per_gas.as_slice().try_into()?),
                 max_priority_fee_per_gas: u128::from_le_bytes(max_priority_fee_per_gas.as_slice().try_into()?),
-                to: to.as_ref().ok_or_eyre("no to")?.try_into()?,
+                to: to.clone().ok_or_eyre("no to")?.into(),
                 value: U256::try_from_le_slice(value.as_slice()).ok_or_eyre("failed to parse value")?,
                 access_list: access_list.iter().map(TryInto::try_into).collect::<eyre::Result<Vec<_>>>()?.into(),
                 authorization_list: authorization_list
@@ -903,5 +904,17 @@ impl TryFrom<&proto::BundleState> for reth::revm::db::BundleState {
             reverts_size: bundle.reverts_size as usize,
         };
         Ok(ret)
+    }
+}
+
+impl From<proto::TxKind> for reth::primitives::Address {
+    fn from(tx_kind: proto::TxKind) -> Self {
+        match tx_kind.kind {
+            Some(kind) => match kind {
+                Kind::Create(_address) => reth::primitives::Address::ZERO,
+                Kind::Call(address) => reth::primitives::Address::from_slice(address.as_slice()),
+            },
+            _ => reth::primitives::Address::ZERO,
+        }
     }
 }
