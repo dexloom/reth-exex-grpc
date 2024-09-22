@@ -8,6 +8,7 @@ use eyre::{eyre, Result};
 use reth::primitives::{Header, TransactionSigned, TxHash};
 use reth::revm::db::states::StorageSlot;
 use reth::revm::db::{BundleAccount, StorageWithOriginalValues};
+use reth::rpc::eth::EthTxBuilder;
 use reth_exex::ExExNotification;
 use reth_primitives::SealedBlockWithSenders;
 use reth_rpc_types::WithOtherFields;
@@ -47,7 +48,7 @@ impl ExExClient {
                     Ok(Some(transaction_proto)) => {
                         if let Ok(transaction) = TransactionSigned::try_from(&transaction_proto){
                             if let Some(transaction) = transaction.into_ecrecovered() {
-                                let transaction = reth_rpc_types_compat::transaction::from_recovered(transaction);
+                                let transaction = reth_rpc_types_compat::transaction::from_recovered::<EthTxBuilder>(transaction);
                                 yield transaction;
                             }
                         }
@@ -116,7 +117,7 @@ impl ExExClient {
                             let diff = sealed_block.difficulty;
                             let hash = sealed_block.hash();
 
-                            if let Ok(block) = reth_rpc_types_compat::block::from_block(
+                            if let Ok(block) = reth_rpc_types_compat::block::from_block::<EthTxBuilder>(
                                 sealed_block.unseal(),
                                 diff,
                                 BlockTransactionsKind::Full,

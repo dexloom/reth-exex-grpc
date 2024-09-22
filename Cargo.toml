@@ -7,7 +7,7 @@ license = "MIT OR Apache-2.0"
 publish = false
 
 [dependencies]
-alloy = { version = "0.3.3", features = ["rpc-types", "rpc-types-trace"] }
+alloy = { version = "0.3.6", features = ["rpc-types", "rpc-types-trace"] }
 
 reth = { git = "https://github.com/paradigmxyz/reth" }
 reth-exex = { git = "https://github.com/paradigmxyz/reth", features = ["serde"] }
