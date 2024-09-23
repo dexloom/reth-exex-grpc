@@ -8,6 +8,7 @@ publish = false
 
 [dependencies]
 alloy = { version = "0.3.6", features = ["rpc-types", "rpc-types-trace"] }
+alloy-rpc-types = "0.3.6"
 
 reth = { git = "https://github.com/paradigmxyz/reth" }
 reth-exex = { git = "https://github.com/paradigmxyz/reth", features = ["serde"] }
