@@ -1,10 +1,10 @@
-use std::sync::Arc;
-
-use eyre::OptionExt;
-use reth::primitives::{Address, BlockHash, Bloom, TxHash, B256, U256};
-
 use crate::proto;
 use crate::proto::tx_kind::Kind;
+use alloy::primitives::Parity::Parity;
+use alloy::primitives::B64;
+use eyre::OptionExt;
+use reth::primitives::{Address, BlockHash, Bloom, TxHash, B256, U256};
+use std::sync::Arc;
 
 impl TryFrom<&reth_exex::ExExNotification> for proto::ExExNotification {
     type Error = eyre::Error;
@@ -103,14 +103,14 @@ impl From<&reth::primitives::Header> for proto::Header {
             logs_bloom: header.logs_bloom.to_vec(),
             difficulty: header.difficulty.to_le_bytes_vec(),
             number: header.number,
-            gas_limit: header.gas_limit,
-            gas_used: header.gas_used,
+            gas_limit: header.gas_limit as u64,
+            gas_used: header.gas_used as u64,
             timestamp: header.timestamp,
             mix_hash: header.mix_hash.to_vec(),
-            nonce: header.nonce,
-            base_fee_per_gas: header.base_fee_per_gas,
-            blob_gas_used: header.blob_gas_used,
-            excess_blob_gas: header.excess_blob_gas,
+            nonce: header.nonce.into(),
+            base_fee_per_gas: header.base_fee_per_gas.map(|x| x as u64),
+            blob_gas_used: header.blob_gas_used.map(|x| x as u64),
+            excess_blob_gas: header.excess_blob_gas.map(|x| x as u64),
             parent_beacon_block_root: header.parent_beacon_block_root.map(|root| root.to_vec()),
             extra_data: header.extra_data.to_vec(),
         }
@@ -123,9 +123,9 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
     fn try_from(transaction: &reth::primitives::TransactionSigned) -> Result<Self, Self::Error> {
         let hash = transaction.hash().to_vec();
         let signature = proto::Signature {
-            r: transaction.signature.r.to_le_bytes_vec(),
-            s: transaction.signature.s.to_le_bytes_vec(),
-            odd_y_parity: transaction.signature.odd_y_parity,
+            r: transaction.signature.r().to_le_bytes_vec(),
+            s: transaction.signature.s().to_le_bytes_vec(),
+            odd_y_parity: transaction.signature.v().y_parity(),
         };
         let transaction = match &transaction.transaction {
             reth::primitives::Transaction::Legacy(reth::primitives::TxLegacy {
@@ -526,14 +526,14 @@ impl TryFrom<&proto::Header> for reth::primitives::Header {
             logs_bloom: Bloom::try_from(header.logs_bloom.as_slice())?,
             difficulty: U256::try_from_le_slice(&header.difficulty).ok_or_eyre("failed to parse difficulty")?,
             number: header.number,
-            gas_limit: header.gas_limit,
-            gas_used: header.gas_used,
+            gas_limit: header.gas_limit as u128,
+            gas_used: header.gas_used as u128,
             timestamp: header.timestamp,
             mix_hash: B256::try_from(header.mix_hash.as_slice())?,
-            nonce: header.nonce,
-            base_fee_per_gas: header.base_fee_per_gas,
-            blob_gas_used: header.blob_gas_used,
-            excess_blob_gas: header.excess_blob_gas,
+            nonce: B64::from(header.nonce),
+            base_fee_per_gas: header.base_fee_per_gas.map(|x| x as u128),
+            blob_gas_used: header.blob_gas_used.map(|x| x as u128),
+            excess_blob_gas: header.excess_blob_gas.map(|x| x as u128),
             parent_beacon_block_root: header.parent_beacon_block_root.as_ref().map(|root| B256::try_from(root.as_slice())).transpose()?,
             requests_root: None,
             extra_data: header.extra_data.as_slice().to_vec().into(),
@@ -546,12 +546,13 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
 
     fn try_from(transaction: &proto::Transaction) -> Result<Self, Self::Error> {
         let hash = TxHash::try_from(transaction.hash.as_slice())?;
-        let signature = transaction.signature.as_ref().ok_or_eyre("no signature")?;
-        let signature = reth::primitives::Signature {
-            r: U256::try_from_le_slice(signature.r.as_slice()).ok_or_eyre("failed to parse r")?,
-            s: U256::try_from_le_slice(signature.s.as_slice()).ok_or_eyre("failed to parse s")?,
-            odd_y_parity: signature.odd_y_parity,
-        };
+        let signature_proto = transaction.signature.as_ref().ok_or_eyre("no signature")?;
+        let signature = reth::primitives::Signature::new(
+            U256::from_le_slice(signature_proto.r.as_slice()),
+            U256::from_le_slice(signature_proto.s.as_slice()),
+            Parity(signature_proto.odd_y_parity),
+        );
+
         let transaction = match transaction.transaction.as_ref().ok_or_eyre("no transaction")? {
             proto::transaction::Transaction::Legacy(proto::TransactionLegacy {
                 chain_id,
