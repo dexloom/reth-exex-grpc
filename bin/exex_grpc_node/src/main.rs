@@ -1,4 +1,4 @@
-use reth::primitives::{IntoRecoveredTransaction, TransactionSigned};
+use reth::primitives::TransactionSigned;
 use reth::transaction_pool::{BlobStore, Pool, TransactionOrdering, TransactionPool, TransactionValidator};
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
 use reth_node_api::FullNodeComponents;

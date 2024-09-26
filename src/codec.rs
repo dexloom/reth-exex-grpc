@@ -1,9 +1,9 @@
 use crate::proto;
 use crate::proto::tx_kind::Kind;
 use alloy::primitives::Parity::Parity;
-use alloy::primitives::B64;
+use alloy::primitives::{Address, BlockHash, Bloom, B64};
 use eyre::OptionExt;
-use reth::primitives::{Address, BlockHash, Bloom, TxHash, B256, U256};
+use reth::primitives::{TxHash, B256, U256};
 use std::sync::Arc;
 
 impl TryFrom<&reth_exex::ExExNotification> for proto::ExExNotification {
@@ -44,7 +44,7 @@ impl TryFrom<&reth::providers::Chain> for proto::Chain {
                             header: Some(block.header.header().into()),
                         }),
                         body: block.transactions().map(TryInto::try_into).collect::<eyre::Result<_>>()?,
-                        ommers: block.ommers.iter().map(Into::into).collect(),
+                        ommers: block.body.ommers.iter().map(Into::into).collect(),
                         senders: block.senders.iter().map(|sender| sender.to_vec()).collect(),
                     })
                 })
@@ -128,7 +128,7 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
             odd_y_parity: transaction.signature.v().y_parity(),
         };
         let transaction = match &transaction.transaction {
-            reth::primitives::Transaction::Legacy(reth::primitives::TxLegacy {
+            reth::primitives::Transaction::Legacy(alloy::consensus::transaction::TxLegacy {
                 chain_id,
                 nonce,
                 gas_price,
@@ -145,7 +145,7 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
                 value: value.to_le_bytes_vec(),
                 input: input.to_vec(),
             }),
-            reth::primitives::Transaction::Eip2930(reth::primitives::TxEip2930 {
+            reth::primitives::Transaction::Eip2930(alloy::consensus::transaction::TxEip2930 {
                 chain_id,
                 nonce,
                 gas_price,
@@ -164,7 +164,7 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
                 access_list: access_list.iter().map(Into::into).collect(),
                 input: input.to_vec(),
             }),
-            reth::primitives::Transaction::Eip1559(reth::primitives::TxEip1559 {
+            reth::primitives::Transaction::Eip1559(alloy::consensus::transaction::TxEip1559 {
                 chain_id,
                 nonce,
                 gas_limit,
@@ -185,7 +185,7 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
                 access_list: access_list.iter().map(Into::into).collect(),
                 input: input.to_vec(),
             }),
-            reth::primitives::Transaction::Eip4844(reth::primitives::TxEip4844 {
+            reth::primitives::Transaction::Eip4844(alloy::consensus::transaction::TxEip4844 {
                 chain_id,
                 nonce,
                 gas_limit,
@@ -210,7 +210,7 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
                 max_fee_per_blob_gas: max_fee_per_blob_gas.to_le_bytes().to_vec(),
                 input: input.to_vec(),
             }),
-            reth::primitives::Transaction::Eip7702(reth::primitives::TxEip7702 {
+            reth::primitives::Transaction::Eip7702(alloy::consensus::transaction::TxEip7702 {
                 chain_id,
                 nonce,
                 gas_limit,
@@ -253,19 +253,19 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
     }
 }
 
-impl From<&reth::primitives::TxKind> for proto::TxKind {
-    fn from(kind: &reth::primitives::TxKind) -> Self {
+impl From<&alloy::primitives::TxKind> for proto::TxKind {
+    fn from(kind: &alloy::primitives::TxKind) -> Self {
         proto::TxKind {
             kind: match kind {
-                reth::primitives::TxKind::Create => Some(proto::tx_kind::Kind::Create(())),
-                reth::primitives::TxKind::Call(address) => Some(proto::tx_kind::Kind::Call(address.to_vec())),
+                alloy::primitives::TxKind::Create => Some(proto::tx_kind::Kind::Create(())),
+                alloy::primitives::TxKind::Call(address) => Some(proto::tx_kind::Kind::Call(address.to_vec())),
             },
         }
     }
 }
 
-impl From<&reth::primitives::AccessListItem> for proto::AccessListItem {
-    fn from(item: &reth::primitives::AccessListItem) -> Self {
+impl From<&reth_primitives::revm_primitives::AccessListItem> for proto::AccessListItem {
+    fn from(item: &reth_primitives::revm_primitives::AccessListItem) -> Self {
         proto::AccessListItem { address: item.address.to_vec(), storage_keys: item.storage_keys.iter().map(|key| key.to_vec()).collect() }
     }
 }
@@ -562,7 +562,7 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
                 to,
                 value,
                 input,
-            }) => reth::primitives::Transaction::Legacy(reth::primitives::TxLegacy {
+            }) => reth::primitives::Transaction::Legacy(alloy::consensus::transaction::TxLegacy {
                 chain_id: *chain_id,
                 nonce: *nonce,
                 gas_price: u128::from_le_bytes(gas_price.as_slice().try_into()?),
@@ -580,7 +580,7 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
                 value,
                 access_list,
                 input,
-            }) => reth::primitives::Transaction::Eip2930(reth::primitives::TxEip2930 {
+            }) => reth::primitives::Transaction::Eip2930(alloy::consensus::transaction::TxEip2930 {
                 chain_id: *chain_id,
                 nonce: *nonce,
                 gas_price: u128::from_le_bytes(gas_price.as_slice().try_into()?),
@@ -600,7 +600,7 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
                 value,
                 access_list,
                 input,
-            }) => reth::primitives::Transaction::Eip1559(reth::primitives::TxEip1559 {
+            }) => reth::primitives::Transaction::Eip1559(alloy::consensus::transaction::TxEip1559 {
                 chain_id: *chain_id,
                 nonce: *nonce,
                 gas_limit: u128::from_le_bytes(gas_limit.as_slice().try_into()?),
@@ -623,7 +623,7 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
                 blob_versioned_hashes,
                 max_fee_per_blob_gas,
                 input,
-            }) => reth::primitives::Transaction::Eip4844(reth::primitives::TxEip4844 {
+            }) => reth::primitives::Transaction::Eip4844(alloy::consensus::transaction::TxEip4844 {
                 chain_id: *chain_id,
                 nonce: *nonce,
                 gas_limit: u128::from_le_bytes(gas_limit.as_slice().try_into()?),
@@ -650,7 +650,7 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
                 access_list,
                 authorization_list,
                 input,
-            }) => reth::primitives::Transaction::Eip7702(reth::primitives::TxEip7702 {
+            }) => reth::primitives::Transaction::Eip7702(alloy::consensus::transaction::TxEip7702 {
                 chain_id: *chain_id,
                 nonce: *nonce,
                 gas_limit: u128::from_le_bytes(gas_limit.as_slice().try_into()?),
@@ -670,7 +670,7 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
                         )?;
 
                         let authorization = authorization.authorization.as_ref().ok_or_eyre("no authorization")?;
-                        Ok(reth::primitives::eip7702::Authorization {
+                        Ok(alloy::eips::eip7702::Authorization {
                             chain_id: U256::try_from_le_slice(authorization.chain_id.as_slice()).ok_or_eyre("failed to parse chain id")?,
                             address: Address::try_from(authorization.address.as_slice())?,
                             nonce: authorization.nonce,
@@ -686,22 +686,22 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
     }
 }
 
-impl TryFrom<&proto::TxKind> for reth::primitives::TxKind {
+impl TryFrom<&proto::TxKind> for alloy::primitives::TxKind {
     type Error = eyre::Error;
 
     fn try_from(tx_kind: &proto::TxKind) -> Result<Self, Self::Error> {
         Ok(match tx_kind.kind.as_ref().ok_or_eyre("no kind")? {
-            proto::tx_kind::Kind::Create(()) => reth::primitives::TxKind::Create,
-            proto::tx_kind::Kind::Call(address) => reth::primitives::TxKind::Call(Address::try_from(address.as_slice())?),
+            proto::tx_kind::Kind::Create(()) => alloy::primitives::TxKind::Create,
+            proto::tx_kind::Kind::Call(address) => alloy::primitives::TxKind::Call(Address::try_from(address.as_slice())?),
         })
     }
 }
 
-impl TryFrom<&proto::AccessListItem> for reth::primitives::AccessListItem {
+impl TryFrom<&proto::AccessListItem> for reth_primitives::revm_primitives::AccessListItem {
     type Error = eyre::Error;
 
     fn try_from(item: &proto::AccessListItem) -> Result<Self, Self::Error> {
-        Ok(reth::primitives::AccessListItem {
+        Ok(reth_primitives::revm_primitives::AccessListItem {
             address: Address::try_from(item.address.as_slice())?,
             storage_keys: item.storage_keys.iter().map(|key| B256::try_from(key.as_slice())).collect::<Result<_, _>>()?,
         })
@@ -908,14 +908,14 @@ impl TryFrom<&proto::BundleState> for reth::revm::db::BundleState {
     }
 }
 
-impl From<proto::TxKind> for reth::primitives::Address {
+impl From<proto::TxKind> for Address {
     fn from(tx_kind: proto::TxKind) -> Self {
         match tx_kind.kind {
             Some(kind) => match kind {
-                Kind::Create(_address) => reth::primitives::Address::ZERO,
-                Kind::Call(address) => reth::primitives::Address::from_slice(address.as_slice()),
+                Kind::Create(_address) => Address::ZERO,
+                Kind::Call(address) => Address::from_slice(address.as_slice()),
             },
-            _ => reth::primitives::Address::ZERO,
+            _ => Address::ZERO,
         }
     }
 }

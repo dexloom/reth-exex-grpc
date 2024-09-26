@@ -2,12 +2,12 @@
 name = "example-exex-remote"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.79"
+rust-version = "1.81"
 license = "MIT OR Apache-2.0"
 publish = false
 
 [dependencies]
-alloy = { version = "0.3.6", features = ["rpc-types", "rpc-types-trace"] }
+alloy = { version = "0.3.6", features = ["rpc-types", "rpc-types-trace", "consensus", "eips"] }
 
 reth = { git = "https://github.com/paradigmxyz/reth" }
 reth-exex = { git = "https://github.com/paradigmxyz/reth", features = ["serde"] }
