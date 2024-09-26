@@ -1,10 +1,9 @@
 use crate::proto;
 use crate::proto::tx_kind::Kind;
 use alloy::primitives::Parity::Parity;
-use alloy::primitives::B64;
+use alloy::primitives::{Address, BlockHash, Bloom, B64};
 use eyre::OptionExt;
-use reth::primitives::{Address, BlockHash, Bloom, TxHash, B256, U256};
-use reth_primitives::Transaction;
+use reth::primitives::{TxHash, B256, U256};
 use std::sync::Arc;
 
 impl TryFrom<&reth_exex::ExExNotification> for proto::ExExNotification {
@@ -909,14 +908,14 @@ impl TryFrom<&proto::BundleState> for reth::revm::db::BundleState {
     }
 }
 
-impl From<proto::TxKind> for reth::primitives::Address {
+impl From<proto::TxKind> for Address {
     fn from(tx_kind: proto::TxKind) -> Self {
         match tx_kind.kind {
             Some(kind) => match kind {
-                Kind::Create(_address) => reth::primitives::Address::ZERO,
-                Kind::Call(address) => reth::primitives::Address::from_slice(address.as_slice()),
+                Kind::Create(_address) => Address::ZERO,
+                Kind::Call(address) => Address::from_slice(address.as_slice()),
             },
-            _ => reth::primitives::Address::ZERO,
+            _ => Address::ZERO,
         }
     }
 }

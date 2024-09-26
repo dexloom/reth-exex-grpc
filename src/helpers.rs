@@ -1,6 +1,7 @@
+use alloy::primitives::BlockHash;
 use alloy::rpc::types::Log as ALog;
 use eyre::OptionExt;
-use reth_primitives::{BlockHash, Receipt, TxHash};
+use reth_primitives::{Receipt, TxHash};
 
 use crate::proto::{Block, BlockReceipts};
 

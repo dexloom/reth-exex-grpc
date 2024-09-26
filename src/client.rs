@@ -1,6 +1,6 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
-use alloy::primitives::{Address, BlockHash, U256};
+use alloy::primitives::{map::HashMap, Address, BlockHash, U256};
 use alloy::rpc::types::{
     serde_helpers::WithOtherFields,
     trace::geth::AccountState,
