@@ -1,12 +1,17 @@
+use crate::proto::{Block, BlockReceipts};
+use alloy::consensus::Header;
+use alloy::primitives::{BlockHash, TxHash};
 use alloy::rpc::types::Log as ALog;
 use eyre::OptionExt;
-use reth_primitives::{BlockHash, Receipt, TxHash};
-
-use crate::proto::{Block, BlockReceipts};
+use reth_primitives::Receipt;
 
 /// Appends all matching logs of a block's receipts.
 /// If the log matches, look up the corresponding transaction hash.
-pub fn append_all_matching_block_logs_sealed(receipts: BlockReceipts, removed: bool, block: Block) -> eyre::Result<(BlockHash, Vec<ALog>)> {
+pub fn append_all_matching_block_logs_sealed(
+    receipts: BlockReceipts,
+    removed: bool,
+    block: Block,
+) -> eyre::Result<(BlockHash, Header, Vec<ALog>)> {
     // Tracks the index of a log in the entire block.
     let mut all_logs: Vec<ALog> = Vec::new();
 
@@ -44,5 +49,5 @@ pub fn append_all_matching_block_logs_sealed(receipts: BlockReceipts, removed: b
             log_index += 1;
         }
     }
-    Ok((block_hash, all_logs))
+    Ok((block_hash, Header::try_from(&header)?, all_logs))
 }

@@ -1,4 +1,4 @@
-use reth::primitives::{IntoRecoveredTransaction, TransactionSigned};
+use reth::primitives::TransactionSigned;
 use reth::transaction_pool::{BlobStore, Pool, TransactionOrdering, TransactionPool, TransactionValidator};
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
 use reth_node_api::FullNodeComponents;
@@ -132,7 +132,7 @@ impl RemoteExEx for ExExService {
                         if let Some(header) = &last_block.header {
                             if let Some(execution_outcome) = chain.execution_outcome {
                                 let state_update_notification =
-                                    StateUpdateNotification { hash: header.hash.clone(), bundle: execution_outcome.bundle };
+                                    StateUpdateNotification { sealed_header: Some(header.clone()), bundle: execution_outcome.bundle };
                                 if let Err(e) = tx.send(Ok(state_update_notification)).await {
                                     error!(error=?e , "state_update.exex.send");
                                     return;

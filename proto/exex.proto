@@ -17,12 +17,12 @@ service RemoteExEx {
 message SubscribeRequest {}
 
 message ReceiptsNotification {
-  Block block = 2;
-  BlockReceipts receipts = 3;
+  Block block = 1;
+  BlockReceipts receipts = 2;
 }
 
 message StateUpdateNotification {
-  bytes hash = 1;
+  SealedHeader sealed_header = 1;
   BundleState bundle = 2;
 }
 

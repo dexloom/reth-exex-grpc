@@ -1,6 +1,6 @@
-use std::collections::{BTreeMap, HashMap};
+use std::collections::BTreeMap;
 
-use alloy::primitives::{Address, BlockHash, U256};
+use alloy::primitives::{map::HashMap, Address, U256};
 use alloy::rpc::types::{
     serde_helpers::WithOtherFields,
     trace::geth::AccountState,
@@ -8,7 +8,7 @@ use alloy::rpc::types::{
 };
 use async_stream::stream;
 use eyre::{eyre, Result};
-use reth::primitives::{Header, TransactionSigned, TxHash};
+use reth::primitives::{SealedHeader, TransactionSigned};
 use reth::revm::db::states::StorageSlot;
 use reth::revm::db::{BundleAccount, StorageWithOriginalValues};
 use reth::rpc::eth::EthTxBuilder;
@@ -78,19 +78,16 @@ impl ExExClient {
         Ok(stream! {
             loop {
                 match stream.message().await {
-                    Ok(Some(notification)) => {
-                        if let Some(header) = notification.header {
-                            if let ( Ok(header), Ok(hash) ) = ( Header::try_from(&header), BlockHash::try_from(notification.hash.as_slice()) ) {
-                                let sealed_header = reth::primitives::SealedHeader::new(
-                                    header,
-                                    hash
-                                );
-                                let header = reth_rpc_types_compat::block::from_primitive_with_hash(sealed_header);
-                                yield header;
-                            }
+                    Ok(Some(sealed_header)) => {
+                        if let Ok(header)  = sealed_header.try_into() {
+                            let header = reth_rpc_types_compat::block::from_primitive_with_hash(header);
+                            yield header;
                         }
                     },
-                    Ok(None) => break, // Stream has ended
+                    Ok(None) => {
+                        break;
+
+                    } // Stream has ended
                     Err(err) => {
                         eprintln!("Error receiving header.message: {:?}", err);
                         break;
@@ -148,7 +145,7 @@ impl ExExClient {
             }
         })
     }
-    pub async fn subscribe_logs(&self) -> Result<impl Stream<Item = (BlockHash, Vec<alloy::rpc::types::Log>)>> {
+    pub async fn subscribe_logs(&self) -> Result<impl Stream<Item = (alloy::rpc::types::Header, Vec<alloy::rpc::types::Log>)>> {
         let stream = self.client.clone().subscribe_receipts(SubscribeRequest {}).await;
 
         let mut stream = match stream {
@@ -164,12 +161,13 @@ impl ExExClient {
                     Ok(Some(notification)) => {
                         if let Some(receipts) = notification.receipts {
                             if let Some(sealed_block) = notification.block {
-                                if let Ok((block_hash, logvec)) = append_all_matching_block_logs_sealed(
+                                if let Ok((block_hash, block_header, logvec)) = append_all_matching_block_logs_sealed(
                                     receipts,
                                     false,
                                     sealed_block,
                                 ){
-                                    yield (block_hash, logvec);
+                                    let header : alloy::rpc::types::Header = reth_rpc_types_compat::block::from_primitive_with_hash(SealedHeader::new(block_header, block_hash));
+                                    yield (header, logvec);
                                 }
                             }
                         }
@@ -185,7 +183,7 @@ impl ExExClient {
         })
     }
 
-    pub async fn subscribe_stata_update(&self) -> Result<impl Stream<Item = (BlockHash, BTreeMap<Address, AccountState>)>> {
+    pub async fn subscribe_stata_update(&self) -> Result<impl Stream<Item = (alloy::rpc::types::Header, BTreeMap<Address, AccountState>)>> {
         let stream = self.client.clone().subscribe_state_update(SubscribeRequest {}).await;
 
         let mut stream = match stream {
@@ -199,35 +197,38 @@ impl ExExClient {
             loop {
                 match stream.message().await {
                     Ok(Some(state_update)) => {
-                        if let Ok(block_hash) = TxHash::try_from(state_update.hash.as_slice()) {
-                            if let Some(bundle_proto) = state_update.bundle {
+                        if let Some(sealed_header) = state_update.sealed_header {
+                            if let Ok(header)  = sealed_header.try_into() {
+                                let header = reth_rpc_types_compat::block::from_primitive_with_hash(header);
 
-                                if let Ok(bundle_state) = reth::revm::db::BundleState::try_from(&bundle_proto){
-                                    let mut state_update : BTreeMap<Address, AccountState> = BTreeMap::new();
+                                if let Some(bundle_proto) = state_update.bundle {
 
-                                    let state_ref: &HashMap<Address, BundleAccount> = &bundle_state.state;
+                                    if let Ok(bundle_state) = reth::revm::db::BundleState::try_from(&bundle_proto){
+                                        let mut state_update : BTreeMap<Address, AccountState> = BTreeMap::new();
 
-                                    for (address, accounts) in state_ref.iter() {
-                                        let account_state = state_update.entry(*address).or_default();
-                                        if let Some(account_info) = accounts.info.clone() {
-                                            account_state.code = account_info.code.map(|c| c.bytecode().clone());
-                                            account_state.balance = Some(account_info.balance);
-                                            account_state.nonce = Some(account_info.nonce);
+                                        let state_ref: &HashMap<Address, BundleAccount> = &bundle_state.state;
+
+                                        for (address, accounts) in state_ref.iter() {
+                                            let account_state = state_update.entry(*address).or_default();
+                                            if let Some(account_info) = accounts.info.clone() {
+                                                account_state.code = account_info.code.map(|c| c.bytecode().clone());
+                                                account_state.balance = Some(account_info.balance);
+                                                account_state.nonce = Some(account_info.nonce);
+                                            }
+
+                                            let storage: &StorageWithOriginalValues = &accounts.storage;
+
+                                            for (key, storage_slot) in storage.iter() {
+                                                let (key, storage_slot): (&U256, &StorageSlot) = (key, storage_slot);
+                                                account_state
+                                                    .storage
+                                                    .insert((*key).into(), storage_slot.present_value.into());
+                                            }
                                         }
-
-                                        let storage: &StorageWithOriginalValues = &accounts.storage;
-
-                                        for (key, storage_slot) in storage.iter() {
-                                            let (key, storage_slot): (&U256, &StorageSlot) = (key, storage_slot);
-                                            account_state
-                                                .storage
-                                                .insert((*key).into(), storage_slot.present_value.into());
-                                        }
+                                        yield (header, state_update);
                                     }
-                                    yield (block_hash, state_update);
                                 }
                             }
-
                         }
                     },
                     Ok(None) => break, // Stream has ended
