@@ -672,7 +672,7 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
                     .iter()
                     .map(|authorization| {
                         let signature = authorization.signature.as_ref().ok_or_eyre("no signature")?;
-                        let signature = reth::primitives::alloy_primitives::Signature::from_rs_and_parity(
+                        let signature = alloy::primitives::Signature::from_rs_and_parity(
                             U256::try_from_le_slice(signature.r.as_slice()).ok_or_eyre("failed to parse r")?,
                             U256::try_from_le_slice(signature.s.as_slice()).ok_or_eyre("failed to parse s")?,
                             signature.odd_y_parity,
