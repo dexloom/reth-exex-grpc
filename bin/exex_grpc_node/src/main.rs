@@ -214,7 +214,7 @@ async fn exex<Node: FullNodeComponents>(
         let _ = notifications.send(notification.clone());
 
         if let Some(committed_chain) = notification.committed_chain() {
-            if let Err(e) = ctx.events.send(ExExEvent::FinishedHeight(committed_chain.tip().number)) {
+            if let Err(e) = ctx.events.send(ExExEvent::FinishedHeight(committed_chain.tip().num_hash())) {
                 error!(error=?e, "ctx.events.send");
             }
         }
