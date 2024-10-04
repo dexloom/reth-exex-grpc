@@ -1,5 +1,5 @@
 [package]
-name = "exex_grpc_node"
+name = "exex-grpc-node"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -14,8 +14,8 @@ tokio.workspace = true
 tokio-stream.workspace = true
 tonic.workspace = true
 
-#example-exex-remote = { git = "https://github.com/dexloom/reth-exex-grpc" }
-example-exex-remote = { path = "../../../reth-exex-grpc" }
+#reth-exex-grpc = { git = "https://github.com/dexloom/reth-exex-grpc" }
+reth-exex-grpc = { path = "../../../reth-exex-grpc" }
 
 reth.workspace = true
 reth-exex.workspace = true

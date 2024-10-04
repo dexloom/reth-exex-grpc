@@ -5,3 +5,8 @@ target/
 
 # It's a library, so ignore the lockfile
 Cargo.lock
+
+# IDE files
+*.iml
+.idea
+.vscode

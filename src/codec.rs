@@ -1,8 +1,8 @@
 use crate::proto;
 use crate::proto::tx_kind::Kind;
 use alloy::primitives::Parity::Parity;
-use alloy::primitives::B64;
 use alloy::primitives::{Address, BlockHash, Bloom, TxHash, B256, U256};
+use alloy::primitives::{TxKind, B64};
 use eyre::OptionExt;
 use std::sync::Arc;
 
@@ -103,14 +103,14 @@ impl From<&reth::primitives::Header> for proto::Header {
             logs_bloom: header.logs_bloom.to_vec(),
             difficulty: header.difficulty.to_le_bytes_vec(),
             number: header.number,
-            gas_limit: header.gas_limit as u64,
-            gas_used: header.gas_used as u64,
+            gas_limit: header.gas_limit,
+            gas_used: header.gas_used,
             timestamp: header.timestamp,
             mix_hash: header.mix_hash.to_vec(),
             nonce: header.nonce.into(),
-            base_fee_per_gas: header.base_fee_per_gas.map(|x| x as u64),
-            blob_gas_used: header.blob_gas_used.map(|x| x as u64),
-            excess_blob_gas: header.excess_blob_gas.map(|x| x as u64),
+            base_fee_per_gas: header.base_fee_per_gas,
+            blob_gas_used: header.blob_gas_used,
+            excess_blob_gas: header.excess_blob_gas,
             parent_beacon_block_root: header.parent_beacon_block_root.map(|root| root.to_vec()),
             extra_data: header.extra_data.to_vec(),
         }
@@ -253,12 +253,12 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
     }
 }
 
-impl From<&alloy::primitives::TxKind> for proto::TxKind {
-    fn from(kind: &alloy::primitives::TxKind) -> Self {
+impl From<&TxKind> for proto::TxKind {
+    fn from(kind: &TxKind) -> Self {
         proto::TxKind {
             kind: match kind {
-                alloy::primitives::TxKind::Create => Some(proto::tx_kind::Kind::Create(())),
-                alloy::primitives::TxKind::Call(address) => Some(proto::tx_kind::Kind::Call(address.to_vec())),
+                TxKind::Create => Some(Kind::Create(())),
+                TxKind::Call(address) => Some(Kind::Call(address.to_vec())),
             },
         }
     }
@@ -917,14 +917,14 @@ impl TryFrom<&proto::BundleState> for reth::revm::db::BundleState {
     }
 }
 
-impl From<proto::TxKind> for alloy::primitives::Address {
+impl From<proto::TxKind> for Address {
     fn from(tx_kind: proto::TxKind) -> Self {
         match tx_kind.kind {
             Some(kind) => match kind {
-                Kind::Create(_address) => alloy::primitives::Address::ZERO,
-                Kind::Call(address) => alloy::primitives::Address::from_slice(address.as_slice()),
+                Kind::Create(_address) => Address::ZERO,
+                Kind::Call(address) => Address::from_slice(address.as_slice()),
             },
-            _ => alloy::primitives::Address::ZERO,
+            _ => Address::ZERO,
         }
     }
 }

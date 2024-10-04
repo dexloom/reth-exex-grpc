@@ -29,19 +29,17 @@ bench:
 clippy:
 	cargo clippy --all-targets --all-features -- -D warnings
 
+# format loom
+.PHONY: fmt
+fmt:
+	cargo +stable fmt --all
+
 # check files format fmt
-.PHONY: clippy
+.PHONY: fmt-check
 fmt-check:
 	cargo +stable fmt --all --check
 
-# check files format with fmt and clippy
-.PHONY: clippy
-pre-release:
-	cargo +stable fmt --all --check
-	cargo clippy --all-targets --all-features -- -D warnings
-
-
-# format loom
-.PHONY: clippy
-fmt:
-	cargo +stable fmt --all
+# check licences
+.PHONY: deny-check
+deny-check:
+	cargo deny --all-features check
