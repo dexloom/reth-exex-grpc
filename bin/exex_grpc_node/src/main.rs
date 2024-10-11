@@ -1,5 +1,5 @@
 use reth::primitives::TransactionSigned;
-use reth::transaction_pool::{BlobStore, Pool, TransactionOrdering, TransactionPool, TransactionValidator};
+use reth::transaction_pool::TransactionPool;
 use reth_exex::{ExExContext, ExExEvent, ExExNotification};
 use reth_node_api::FullNodeComponents;
 use reth_node_ethereum::EthereumNode;
@@ -210,7 +210,7 @@ async fn exex<Node: FullNodeComponents>(
 ) -> eyre::Result<()> {
     info!("ExEx worker started");
 
-    while let Some(notification) = ctx.notifications.next().await {
+    while let Some(notification) = ctx.notifications.try_next().await? {
         let _ = notifications.send(notification.clone());
 
         if let Some(committed_chain) = notification.committed_chain() {
@@ -224,11 +224,9 @@ async fn exex<Node: FullNodeComponents>(
     Ok(())
 }
 
-pub async fn mempool_worker<V, T, S>(mempool: Pool<V, T, S>, notifications: broadcast::Sender<TransactionSigned>) -> eyre::Result<()>
+pub async fn mempool_worker<Pool>(mempool: Pool, notifications: broadcast::Sender<TransactionSigned>) -> eyre::Result<()>
 where
-    V: TransactionValidator,
-    T: TransactionOrdering<Transaction = <V as TransactionValidator>::Transaction>,
-    S: BlobStore,
+    Pool: TransactionPool + Clone + 'static,
 {
     info!("Mempool worker started");
     let mut tx_listener = mempool.new_transactions_listener();

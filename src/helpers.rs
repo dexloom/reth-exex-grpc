@@ -1,7 +1,7 @@
 use crate::proto::{Block, BlockReceipts};
-use alloy::consensus::Header;
-use alloy::primitives::{BlockHash, TxHash};
-use alloy::rpc::types::Log as ALog;
+use alloy_consensus::Header;
+use alloy_primitives::{BlockHash, TxHash};
+use alloy_rpc_types::Log as ALog;
 use eyre::OptionExt;
 use reth_primitives::Receipt;
 

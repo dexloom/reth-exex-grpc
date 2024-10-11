@@ -1,11 +1,11 @@
 use std::collections::BTreeMap;
 
-use alloy::primitives::{map::HashMap, Address, U256};
-use alloy::rpc::types::{
+use alloy_primitives::{map::HashMap, Address, U256};
+use alloy_rpc_types::{
     serde_helpers::WithOtherFields,
-    trace::geth::AccountState,
     {Block, BlockTransactions, BlockTransactionsKind},
 };
+use alloy_rpc_types_trace::geth::AccountState;
 use async_stream::stream;
 use eyre::{eyre, Result};
 use reth::primitives::{SealedHeader, TransactionSigned};
@@ -34,7 +34,7 @@ impl ExExClient {
         Ok(ExExClient { client })
     }
 
-    pub async fn subscribe_mempool_tx(&self) -> Result<impl Stream<Item = WithOtherFields<alloy::rpc::types::eth::Transaction>> + '_> {
+    pub async fn subscribe_mempool_tx(&self) -> Result<impl Stream<Item = WithOtherFields<alloy_rpc_types::eth::Transaction>> + '_> {
         let stream = self.client.clone().subscribe_mempool_tx(SubscribeRequest {}).await;
         let mut stream = match stream {
             Ok(stream) => stream.into_inner(),
@@ -65,7 +65,7 @@ impl ExExClient {
         })
     }
 
-    pub async fn subscribe_header(&self) -> Result<impl Stream<Item = alloy::rpc::types::Header> + '_> {
+    pub async fn subscribe_header(&self) -> Result<impl Stream<Item = alloy_rpc_types::Header> + '_> {
         let stream = self.client.clone().subscribe_header(SubscribeRequest {}).await;
 
         let mut stream = match stream {
@@ -97,7 +97,7 @@ impl ExExClient {
         })
     }
 
-    pub async fn subscribe_block(&self) -> Result<impl Stream<Item = alloy::rpc::types::Block>> {
+    pub async fn subscribe_block(&self) -> Result<impl Stream<Item = alloy_rpc_types::Block>> {
         let stream = self.client.clone().subscribe_block(SubscribeRequest {}).await;
 
         let mut stream = match stream {
@@ -145,7 +145,7 @@ impl ExExClient {
             }
         })
     }
-    pub async fn subscribe_logs(&self) -> Result<impl Stream<Item = (alloy::rpc::types::Header, Vec<alloy::rpc::types::Log>)>> {
+    pub async fn subscribe_logs(&self) -> Result<impl Stream<Item = (alloy_rpc_types::Header, Vec<alloy_rpc_types::Log>)>> {
         let stream = self.client.clone().subscribe_receipts(SubscribeRequest {}).await;
 
         let mut stream = match stream {
@@ -166,7 +166,7 @@ impl ExExClient {
                                     false,
                                     sealed_block,
                                 ){
-                                    let header : alloy::rpc::types::Header = reth_rpc_types_compat::block::from_primitive_with_hash(SealedHeader::new(block_header, block_hash));
+                                    let header : alloy_rpc_types::Header = reth_rpc_types_compat::block::from_primitive_with_hash(SealedHeader::new(block_header, block_hash));
                                     yield (header, logvec);
                                 }
                             }
@@ -183,7 +183,7 @@ impl ExExClient {
         })
     }
 
-    pub async fn subscribe_stata_update(&self) -> Result<impl Stream<Item = (alloy::rpc::types::Header, BTreeMap<Address, AccountState>)>> {
+    pub async fn subscribe_stata_update(&self) -> Result<impl Stream<Item = (alloy_rpc_types::Header, BTreeMap<Address, AccountState>)>> {
         let stream = self.client.clone().subscribe_state_update(SubscribeRequest {}).await;
 
         let mut stream = match stream {

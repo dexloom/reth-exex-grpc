@@ -7,16 +7,21 @@ license = "MIT OR Apache-2.0"
 publish = false
 
 [dependencies]
-alloy = { version = "0.4.2", features = ["rpc-types", "rpc-types-trace", "consensus", "eips"] }
+alloy-primitives = "0.8.7"
+alloy-consensus  = "0.4.2"
+alloy-eips = "0.4.2"
+alloy-rpc-types = "0.4.2"
+alloy-rpc-types-trace = "0.4.2"
 
-reth = { git = "https://github.com/paradigmxyz/reth", tag="v1.0.8" }
-reth-exex = { git = "https://github.com/paradigmxyz/reth", tag="v1.0.8", features = ["serde"] }
-reth-node-api = { git = "https://github.com/paradigmxyz/reth", tag="v1.0.8" }
-reth-node-ethereum = { git = "https://github.com/paradigmxyz/reth", tag="v1.0.8" }
-reth-tracing = { git = "https://github.com/paradigmxyz/reth", tag="v1.0.8" }
-reth-execution-types = { git = "https://github.com/paradigmxyz/reth", tag="v1.0.8" }
-reth-rpc-types-compat = { git = "https://github.com/paradigmxyz/reth", tag="v1.0.8" }
-reth-primitives = { git = "https://github.com/paradigmxyz/reth", tag="v1.0.8" }
+
+reth = { git = "https://github.com/paradigmxyz/reth", tag="v1.1.0" }
+reth-exex = { git = "https://github.com/paradigmxyz/reth", tag="v1.1.0", features = ["serde"] }
+reth-node-api = { git = "https://github.com/paradigmxyz/reth", tag="v1.1.0" }
+reth-node-ethereum = { git = "https://github.com/paradigmxyz/reth", tag="v1.1.0" }
+reth-tracing = { git = "https://github.com/paradigmxyz/reth", tag="v1.1.0" }
+reth-execution-types = { git = "https://github.com/paradigmxyz/reth", tag="v1.1.0" }
+reth-rpc-types-compat = { git = "https://github.com/paradigmxyz/reth", tag="v1.1.0" }
+reth-primitives = { git = "https://github.com/paradigmxyz/reth", tag="v1.1.0" }
 
 futures-util = "0.3.30"
 
@@ -34,7 +39,7 @@ bincode = "1.3"
 tonic-build = "0.12"
 
 [dev-dependencies]
-reth-exex-test-utils = { git = "https://github.com/paradigmxyz/reth", tag="v1.0.8" }
+reth-exex-test-utils = { git = "https://github.com/paradigmxyz/reth", tag="v1.1.0" }
 
 [[bin]]
 name = "exex_grpc_node"
