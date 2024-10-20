@@ -88,6 +88,7 @@ message Header {
   optional bytes parent_beacon_block_root = 19;
   // TODO: add requests_root
   bytes extra_data = 20;
+  optional bytes requests_hash = 21;
 }
 
 message Transaction {
@@ -186,7 +187,7 @@ message AuthorizationListItem {
 }
 
 message Authorization {
-  bytes chain_id = 1;
+  uint64 chain_id = 1;
   bytes address = 2;
   uint64 nonce = 3;
 }

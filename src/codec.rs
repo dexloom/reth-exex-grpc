@@ -5,7 +5,6 @@ use eyre::OptionExt;
 
 use crate::proto;
 
-
 impl TryFrom<&reth_exex::ExExNotification> for proto::ExExNotification {
     type Error = eyre::Error;
 
@@ -113,6 +112,7 @@ impl From<&reth::primitives::Header> for proto::Header {
             excess_blob_gas: header.excess_blob_gas,
             parent_beacon_block_root: header.parent_beacon_block_root.map(|root| root.to_vec()),
             extra_data: header.extra_data.to_vec(),
+            requests_hash: header.requests_hash.map(|root| root.to_vec()),
         }
     }
 }
@@ -234,7 +234,7 @@ impl TryFrom<&reth::primitives::TransactionSigned> for proto::Transaction {
                     .iter()
                     .map(|authorization| proto::AuthorizationListItem {
                         authorization: Some(proto::Authorization {
-                            chain_id: authorization.chain_id().to_le_bytes_vec(),
+                            chain_id: authorization.chain_id(),
                             address: authorization.address().to_vec(),
                             nonce: authorization.nonce(),
                         }),
@@ -503,7 +503,7 @@ impl TryFrom<&proto::Block> for reth::primitives::SealedBlockWithSenders {
         reth::primitives::SealedBlockWithSenders::new(
             reth::primitives::SealedBlock::new(
                 sealed_header,
-                reth::primitives::BlockBody { transactions, ommers, withdrawals: Default::default(), requests: Default::default() },
+                reth::primitives::BlockBody { transactions, ommers, withdrawals: Default::default() },
             ),
             senders,
         )
@@ -535,8 +535,8 @@ impl TryFrom<&proto::Header> for reth::primitives::Header {
             blob_gas_used: header.blob_gas_used,
             excess_blob_gas: header.excess_blob_gas,
             parent_beacon_block_root: header.parent_beacon_block_root.as_ref().map(|root| B256::try_from(root.as_slice())).transpose()?,
-            requests_root: None,
             extra_data: header.extra_data.as_slice().to_vec().into(),
+            requests_hash: header.requests_hash.as_ref().map(|root| B256::try_from(root.as_slice())).transpose()?,
         })
     }
 }
@@ -670,7 +670,7 @@ impl TryFrom<&proto::Transaction> for reth::primitives::TransactionSigned {
 
                         let authorization = authorization.authorization.as_ref().ok_or_eyre("no authorization")?;
                         Ok(alloy_eips::eip7702::Authorization {
-                            chain_id: U256::try_from_le_slice(authorization.chain_id.as_slice()).ok_or_eyre("failed to parse chain id")?,
+                            chain_id: authorization.chain_id,
                             address: Address::try_from(authorization.address.as_slice())?,
                             nonce: authorization.nonce,
                         }
